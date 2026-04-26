@@ -1,0 +1,1796 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Calendário Personalizado de Cultivo</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: #000; overflow: hidden; }
+  #root { position: absolute; inset: 0; }
+  #video-root { position: absolute; inset: 0; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+
+// animations.jsx
+// Reusable animation starter: Stage, Timeline, Sprite, easing helpers.
+// Usage (in an HTML file that loads React + Babel):
+//
+//   <Stage width={1280} height={720} duration={10} background="#f6f4ef">
+//     <MyScene />
+//   </Stage>
+//
+// Inside <Stage>, any child can call useTime() to read the current
+// playhead (seconds). Or wrap content in <Sprite start={1} end={4}>...</Sprite>
+// to only render during that window -- children receive a `localTime` and
+// `progress` via the useSprite() hook.
+//
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ── Easing functions (hand-rolled, Popmotion-style) ─────────────────────────
+// All easings take t ∈ [0,1] and return eased t ∈ [0,1] (may overshoot for back/elastic).
+const Easing = {
+  linear: (t) => t,
+
+  // Quad
+  easeInQuad:    (t) => t * t,
+  easeOutQuad:   (t) => t * (2 - t),
+  easeInOutQuad: (t) => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t),
+
+  // Cubic
+  easeInCubic:    (t) => t * t * t,
+  easeOutCubic:   (t) => (--t) * t * t + 1,
+  easeInOutCubic: (t) => (t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1),
+
+  // Quart
+  easeInQuart:    (t) => t * t * t * t,
+  easeOutQuart:   (t) => 1 - (--t) * t * t * t,
+  easeInOutQuart: (t) => (t < 0.5 ? 8 * t * t * t * t : 1 - 8 * (--t) * t * t * t),
+
+  // Expo
+  easeInExpo:  (t) => (t === 0 ? 0 : Math.pow(2, 10 * (t - 1))),
+  easeOutExpo: (t) => (t === 1 ? 1 : 1 - Math.pow(2, -10 * t)),
+  easeInOutExpo: (t) => {
+    if (t === 0) return 0;
+    if (t === 1) return 1;
+    if (t < 0.5) return 0.5 * Math.pow(2, 20 * t - 10);
+    return 1 - 0.5 * Math.pow(2, -20 * t + 10);
+  },
+
+  // Sine
+  easeInSine:    (t) => 1 - Math.cos((t * Math.PI) / 2),
+  easeOutSine:   (t) => Math.sin((t * Math.PI) / 2),
+  easeInOutSine: (t) => -(Math.cos(Math.PI * t) - 1) / 2,
+
+  // Back (overshoot)
+  easeOutBack: (t) => {
+    const c1 = 1.70158, c3 = c1 + 1;
+    return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+  },
+  easeInBack: (t) => {
+    const c1 = 1.70158, c3 = c1 + 1;
+    return c3 * t * t * t - c1 * t * t;
+  },
+  easeInOutBack: (t) => {
+    const c1 = 1.70158, c2 = c1 * 1.525;
+    return t < 0.5
+      ? (Math.pow(2 * t, 2) * ((c2 + 1) * 2 * t - c2)) / 2
+      : (Math.pow(2 * t - 2, 2) * ((c2 + 1) * (t * 2 - 2) + c2) + 2) / 2;
+  },
+
+  // Elastic
+  easeOutElastic: (t) => {
+    const c4 = (2 * Math.PI) / 3;
+    if (t === 0) return 0;
+    if (t === 1) return 1;
+    return Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
+  },
+};
+
+// ── Core interpolation helpers ──────────────────────────────────────────────
+
+// Clamp a value to [min, max]
+const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+
+// interpolate([0, 0.5, 1], [0, 100, 50], ease?) -> fn(t)
+// Popmotion-style: linearly maps t across input keyframes to output values,
+// with optional easing per segment (single fn or array of fns).
+function interpolate(input, output, ease = Easing.linear) {
+  return (t) => {
+    if (t <= input[0]) return output[0];
+    if (t >= input[input.length - 1]) return output[output.length - 1];
+    for (let i = 0; i < input.length - 1; i++) {
+      if (t >= input[i] && t <= input[i + 1]) {
+        const span = input[i + 1] - input[i];
+        const local = span === 0 ? 0 : (t - input[i]) / span;
+        const easeFn = Array.isArray(ease) ? (ease[i] || Easing.linear) : ease;
+        const eased = easeFn(local);
+        return output[i] + (output[i + 1] - output[i]) * eased;
+      }
+    }
+    return output[output.length - 1];
+  };
+}
+
+// animate({from, to, start, end, ease})(t) — simpler single-segment tween.
+// Returns `from` before `start`, `to` after `end`.
+function animate({ from = 0, to = 1, start = 0, end = 1, ease = Easing.easeInOutCubic }) {
+  return (t) => {
+    if (t <= start) return from;
+    if (t >= end) return to;
+    const local = (t - start) / (end - start);
+    return from + (to - from) * ease(local);
+  };
+}
+
+// ── Timeline context ────────────────────────────────────────────────────────
+
+const TimelineContext = React.createContext({ time: 0, duration: 10, playing: false });
+
+const useTime = () => React.useContext(TimelineContext).time;
+const useTimeline = () => React.useContext(TimelineContext);
+
+// ── Sprite ──────────────────────────────────────────────────────────────────
+// Renders children only when the playhead is inside [start, end]. Provides
+// a sub-context with `localTime` (seconds since start) and `progress` (0..1).
+//
+//   <Sprite start={2} end={5}>
+//     {({ localTime, progress }) => <Thing x={progress * 100} />}
+//   </Sprite>
+//
+// Or as a plain wrapper — children can call useSprite() themselves.
+
+const SpriteContext = React.createContext({ localTime: 0, progress: 0, duration: 0 });
+const useSprite = () => React.useContext(SpriteContext);
+
+function Sprite({ start = 0, end = Infinity, children, keepMounted = false }) {
+  const { time } = useTimeline();
+  const visible = time >= start && time <= end;
+  if (!visible && !keepMounted) return null;
+
+  const duration = end - start;
+  const localTime = Math.max(0, time - start);
+  const progress = duration > 0 && isFinite(duration)
+    ? clamp(localTime / duration, 0, 1)
+    : 0;
+
+  const value = { localTime, progress, duration, visible };
+
+  return (
+    <SpriteContext.Provider value={value}>
+      {typeof children === 'function' ? children(value) : children}
+    </SpriteContext.Provider>
+  );
+}
+
+// ── Sample sprite components ────────────────────────────────────────────────
+
+// TextSprite: fades/slides text in on entry, holds, then fades out on exit.
+// Props: text, x, y, size, color, font, entryDur, exitDur, align
+function TextSprite({
+  text,
+  x = 0, y = 0,
+  size = 48,
+  color = '#111',
+  font = 'Inter, system-ui, sans-serif',
+  weight = 600,
+  entryDur = 0.45,
+  exitDur = 0.35,
+  entryEase = Easing.easeOutBack,
+  exitEase = Easing.easeInCubic,
+  align = 'left',
+  letterSpacing = '-0.01em',
+}) {
+  const { localTime, duration } = useSprite();
+  const exitStart = Math.max(0, duration - exitDur);
+
+  let opacity = 1;
+  let ty = 0;
+
+  if (localTime < entryDur) {
+    const t = entryEase(clamp(localTime / entryDur, 0, 1));
+    opacity = t;
+    ty = (1 - t) * 16;
+  } else if (localTime > exitStart) {
+    const t = exitEase(clamp((localTime - exitStart) / exitDur, 0, 1));
+    opacity = 1 - t;
+    ty = -t * 8;
+  }
+
+  const translateX = align === 'center' ? '-50%' : align === 'right' ? '-100%' : '0';
+
+  return (
+    <div style={{
+      position: 'absolute',
+      left: x, top: y,
+      transform: `translate(${translateX}, ${ty}px)`,
+      opacity,
+      fontFamily: font,
+      fontSize: size,
+      fontWeight: weight,
+      color,
+      letterSpacing,
+      whiteSpace: 'pre',
+      lineHeight: 1.1,
+      willChange: 'transform, opacity',
+    }}>
+      {text}
+    </div>
+  );
+}
+
+// ImageSprite: scales + fades in; optional Ken Burns drift during hold.
+function ImageSprite({
+  src,
+  x = 0, y = 0,
+  width = 400, height = 300,
+  entryDur = 0.6,
+  exitDur = 0.4,
+  kenBurns = false,
+  kenBurnsScale = 1.08,
+  radius = 12,
+  fit = 'cover',
+  placeholder = null, // {label: string} for striped placeholder
+}) {
+  const { localTime, duration } = useSprite();
+  const exitStart = Math.max(0, duration - exitDur);
+
+  let opacity = 1;
+  let scale = 1;
+
+  if (localTime < entryDur) {
+    const t = Easing.easeOutCubic(clamp(localTime / entryDur, 0, 1));
+    opacity = t;
+    scale = 0.96 + 0.04 * t;
+  } else if (localTime > exitStart) {
+    const t = Easing.easeInCubic(clamp((localTime - exitStart) / exitDur, 0, 1));
+    opacity = 1 - t;
+    scale = (kenBurns ? kenBurnsScale : 1) + 0.02 * t;
+  } else if (kenBurns) {
+    const holdSpan = exitStart - entryDur;
+    const holdT = holdSpan > 0 ? (localTime - entryDur) / holdSpan : 0;
+    scale = 1 + (kenBurnsScale - 1) * holdT;
+  }
+
+  const content = placeholder ? (
+    <div style={{
+      width: '100%', height: '100%',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'repeating-linear-gradient(135deg, #e9e6df 0 10px, #dcd8cf 10px 20px)',
+      color: '#6b6458',
+      fontFamily: 'JetBrains Mono, ui-monospace, monospace',
+      fontSize: 13,
+      letterSpacing: '0.04em',
+      textTransform: 'uppercase',
+    }}>
+      {placeholder.label || 'image'}
+    </div>
+  ) : (
+    <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: fit, display: 'block' }} />
+  );
+
+  return (
+    <div style={{
+      position: 'absolute',
+      left: x, top: y,
+      width, height,
+      opacity,
+      transform: `scale(${scale})`,
+      transformOrigin: 'center',
+      borderRadius: radius,
+      overflow: 'hidden',
+      willChange: 'transform, opacity',
+    }}>
+      {content}
+    </div>
+  );
+}
+
+// RectSprite: simple rectangle that animates position/size/color via props.
+// Useful demo primitive — takes a `render` fn for per-frame customization.
+function RectSprite({
+  x = 0, y = 0,
+  width = 100, height = 100,
+  color = '#111',
+  radius = 8,
+  entryDur = 0.4,
+  exitDur = 0.3,
+  render, // optional: (ctx) => style overrides
+}) {
+  const spriteCtx = useSprite();
+  const { localTime, duration } = spriteCtx;
+  const exitStart = Math.max(0, duration - exitDur);
+
+  let opacity = 1;
+  let scale = 1;
+
+  if (localTime < entryDur) {
+    const t = Easing.easeOutBack(clamp(localTime / entryDur, 0, 1));
+    opacity = clamp(localTime / entryDur, 0, 1);
+    scale = 0.4 + 0.6 * t;
+  } else if (localTime > exitStart) {
+    const t = Easing.easeInQuad(clamp((localTime - exitStart) / exitDur, 0, 1));
+    opacity = 1 - t;
+    scale = 1 - 0.15 * t;
+  }
+
+  const overrides = render ? render(spriteCtx) : {};
+
+  return (
+    <div style={{
+      position: 'absolute',
+      left: x, top: y,
+      width, height,
+      background: color,
+      borderRadius: radius,
+      opacity,
+      transform: `scale(${scale})`,
+      transformOrigin: 'center',
+      willChange: 'transform, opacity',
+      ...overrides,
+    }} />
+  );
+}
+
+
+function Stage({
+  width = 1280,
+  height = 720,
+  duration = 10,
+  background = '#f6f4ef',
+  fps = 60,
+  loop = true,
+  autoplay = true,
+  persistKey = 'animstage',
+  children,
+}) {
+  const [time, setTime] = React.useState(() => {
+    try {
+      const v = parseFloat(localStorage.getItem(persistKey + ':t') || '0');
+      return isFinite(v) ? clamp(v, 0, duration) : 0;
+    } catch { return 0; }
+  });
+  const [playing, setPlaying] = React.useState(autoplay);
+  const [hoverTime, setHoverTime] = React.useState(null);
+  const [scale, setScale] = React.useState(1);
+
+  const stageRef = React.useRef(null);
+  const canvasRef = React.useRef(null);
+  const rafRef = React.useRef(null);
+  const lastTsRef = React.useRef(null);
+
+  // Persist playhead
+  React.useEffect(() => {
+    try { localStorage.setItem(persistKey + ':t', String(time)); } catch {}
+  }, [time, persistKey]);
+
+  // Auto-scale to fit viewport
+  React.useEffect(() => {
+    if (!stageRef.current) return;
+    const el = stageRef.current;
+    const measure = () => {
+      const barH = 44; // playback bar height
+      const s = Math.min(
+        el.clientWidth / width,
+        (el.clientHeight - barH) / height
+      );
+      setScale(Math.max(0.05, s));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    window.addEventListener('resize', measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, [width, height]);
+
+  // Animation loop
+  React.useEffect(() => {
+    if (!playing) {
+      lastTsRef.current = null;
+      return;
+    }
+    const step = (ts) => {
+      if (lastTsRef.current == null) lastTsRef.current = ts;
+      const dt = (ts - lastTsRef.current) / 1000;
+      lastTsRef.current = ts;
+      setTime((t) => {
+        let next = t + dt;
+        if (next >= duration) {
+          if (loop) next = next % duration;
+          else { next = duration; setPlaying(false); }
+        }
+        return next;
+      });
+      rafRef.current = requestAnimationFrame(step);
+    };
+    rafRef.current = requestAnimationFrame(step);
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      lastTsRef.current = null;
+    };
+  }, [playing, duration, loop]);
+
+  // Keyboard: space = play/pause, ← → = seek
+  React.useEffect(() => {
+    const onKey = (e) => {
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+      if (e.code === 'Space') {
+        e.preventDefault();
+        setPlaying(p => !p);
+      } else if (e.code === 'ArrowLeft') {
+        setTime(t => clamp(t - (e.shiftKey ? 1 : 0.1), 0, duration));
+      } else if (e.code === 'ArrowRight') {
+        setTime(t => clamp(t + (e.shiftKey ? 1 : 0.1), 0, duration));
+      } else if (e.key === '0' || e.code === 'Home') {
+        setTime(0);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [duration]);
+
+  const displayTime = hoverTime != null ? hoverTime : time;
+
+  const ctxValue = React.useMemo(
+    () => ({ time: displayTime, duration, playing, setTime, setPlaying }),
+    [displayTime, duration, playing]
+  );
+
+  return (
+    <div
+      ref={stageRef}
+      style={{
+        position: 'absolute', inset: 0,
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center',
+        background: '#0a0a0a',
+        fontFamily: 'Inter, system-ui, sans-serif',
+      }}
+    >
+      {/* Canvas area — vertically centered in remaining space */}
+      <div style={{
+        flex: 1,
+        width: '100%',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        overflow: 'hidden',
+        minHeight: 0,
+      }}>
+        <div
+          ref={canvasRef}
+          style={{
+            width, height,
+            background,
+            position: 'relative',
+            transform: `scale(${scale})`,
+            transformOrigin: 'center',
+            flexShrink: 0,
+            boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
+            overflow: 'hidden',
+          }}
+        >
+          <TimelineContext.Provider value={ctxValue}>
+            {children}
+          </TimelineContext.Provider>
+        </div>
+      </div>
+
+      {/* Playback bar — stacked below canvas, never overlapping */}
+      <PlaybackBar
+        time={displayTime}
+        actualTime={time}
+        duration={duration}
+        playing={playing}
+        onPlayPause={() => setPlaying(p => !p)}
+        onReset={() => { setTime(0); }}
+        onSeek={(t) => setTime(t)}
+        onHover={(t) => setHoverTime(t)}
+      />
+    </div>
+  );
+}
+
+// ── Playback bar ────────────────────────────────────────────────────────────
+// Play/pause, return-to-begin, scrub track, time display.
+// Uses fixed-width time fields so layout doesn't thrash.
+
+function PlaybackBar({ time, duration, playing, onPlayPause, onReset, onSeek, onHover }) {
+  const trackRef = React.useRef(null);
+  const [dragging, setDragging] = React.useState(false);
+
+  const timeFromEvent = React.useCallback((e) => {
+    const rect = trackRef.current.getBoundingClientRect();
+    const x = clamp((e.clientX - rect.left) / rect.width, 0, 1);
+    return x * duration;
+  }, [duration]);
+
+  const onTrackMove = (e) => {
+    if (!trackRef.current) return;
+    const t = timeFromEvent(e);
+    if (dragging) {
+      onSeek(t);
+    } else {
+      onHover(t);
+    }
+  };
+
+  const onTrackLeave = () => {
+    if (!dragging) onHover(null);
+  };
+
+  const onTrackDown = (e) => {
+    setDragging(true);
+    const t = timeFromEvent(e);
+    onSeek(t);
+    onHover(null);
+  };
+
+  React.useEffect(() => {
+    if (!dragging) return;
+    const onUp = () => setDragging(false);
+    const onMove = (e) => {
+      if (!trackRef.current) return;
+      const t = timeFromEvent(e);
+      onSeek(t);
+    };
+    window.addEventListener('mouseup', onUp);
+    window.addEventListener('mousemove', onMove);
+    return () => {
+      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('mousemove', onMove);
+    };
+  }, [dragging, timeFromEvent, onSeek]);
+
+  const pct = duration > 0 ? (time / duration) * 100 : 0;
+  const fmt = (t) => {
+    const total = Math.max(0, t);
+    const m = Math.floor(total / 60);
+    const s = Math.floor(total % 60);
+    const cs = Math.floor((total * 100) % 100);
+    return `${String(m).padStart(1, '0')}:${String(s).padStart(2, '0')}.${String(cs).padStart(2, '0')}`;
+  };
+
+  const mono = 'JetBrains Mono, ui-monospace, SFMono-Regular, monospace';
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 12,
+      padding: '8px 16px',
+      background: 'rgba(20,20,20,0.92)',
+      borderTop: '1px solid rgba(255,255,255,0.08)',
+      width: '100%',
+      maxWidth: 680,
+      alignSelf: 'center',
+
+      borderRadius: 8,
+      color: '#f6f4ef',
+      fontFamily: 'Inter, system-ui, sans-serif',
+      userSelect: 'none',
+      flexShrink: 0,
+    }}>
+      <IconButton onClick={onReset} title="Return to start (0)">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M3 2v10M12 2L5 7l7 5V2z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round"/>
+        </svg>
+      </IconButton>
+      <IconButton onClick={onPlayPause} title="Play/pause (space)">
+        {playing ? (
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <rect x="3" y="2" width="3" height="10" fill="currentColor"/>
+            <rect x="8" y="2" width="3" height="10" fill="currentColor"/>
+          </svg>
+        ) : (
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M3 2l9 5-9 5V2z" fill="currentColor"/>
+          </svg>
+        )}
+      </IconButton>
+
+      {/* Current time: fixed width so it doesn't thrash */}
+      <div style={{
+        fontFamily: mono,
+        fontSize: 12,
+        fontVariantNumeric: 'tabular-nums',
+        width: 64, textAlign: 'right',
+        color: '#f6f4ef',
+      }}>
+        {fmt(time)}
+      </div>
+
+      {/* Scrub track */}
+      <div
+        ref={trackRef}
+        onMouseMove={onTrackMove}
+        onMouseLeave={onTrackLeave}
+        onMouseDown={onTrackDown}
+        style={{
+          flex: 1,
+          height: 22,
+          position: 'relative',
+          cursor: 'pointer',
+          display: 'flex', alignItems: 'center',
+        }}
+      >
+        <div style={{
+          position: 'absolute',
+          left: 0, right: 0, height: 4,
+          background: 'rgba(255,255,255,0.12)',
+          borderRadius: 2,
+        }}/>
+        <div style={{
+          position: 'absolute',
+          left: 0, width: `${pct}%`, height: 4,
+          background: 'oklch(72% 0.12 250)',
+          borderRadius: 2,
+        }}/>
+        <div style={{
+          position: 'absolute',
+          left: `${pct}%`, top: '50%',
+          width: 12, height: 12,
+          marginLeft: -6, marginTop: -6,
+          background: '#fff',
+          borderRadius: 6,
+          boxShadow: '0 2px 4px rgba(0,0,0,0.4)',
+        }}/>
+      </div>
+
+      {/* Duration: fixed width */}
+      <div style={{
+        fontFamily: mono,
+        fontSize: 12,
+        fontVariantNumeric: 'tabular-nums',
+        width: 64, textAlign: 'left',
+        color: 'rgba(246,244,239,0.55)',
+      }}>
+        {fmt(duration)}
+      </div>
+    </div>
+  );
+}
+
+function IconButton({ children, onClick, title }) {
+  const [hover, setHover] = React.useState(false);
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        width: 28, height: 28,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: hover ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.04)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        borderRadius: 6,
+        color: '#f6f4ef',
+        cursor: 'pointer',
+        padding: 0,
+        transition: 'background 120ms',
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+
+Object.assign(window, {
+  Easing, interpolate, animate, clamp,
+  TimelineContext, useTime, useTimeline,
+  Sprite, SpriteContext, useSprite,
+  TextSprite, ImageSprite, RectSprite,
+  Stage, PlaybackBar,
+});
+
+
+</script>
+
+<script type="text/babel" data-presets="react">
+// build-layers.jsx — construção contínua, estilo da arte conceitual
+// Fundo escuro verde-noite · faixas climáticas verticais · curvas de sinais ·
+// planta no centro com anéis concêntricos · pontos-chave conectados
+
+const PALETTE = ['#1565C0', '#42A5F5', '#43A047', '#FDD835', '#FB8C00', '#E53935'];
+const MONTHS = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+
+// Stage geometry — designed against 1920×1080
+const W = 1080, H = 1920;
+const CENTER = { x: 540, y: 960 };
+
+// ── Background: vertical climate bands (the "year") ───────────────────────
+
+const BANDS = [
+  { x: 0,   w: 180, color: '#FB8C00', tone: '#1a1505' },
+  { x: 180, w: 90,  color: '#FDD835', tone: '#1a1505' },
+  { x: 270, w: 90,  color: '#43A047', tone: '#0f1a10' },
+  { x: 360, w: 180, color: '#42A5F5', tone: '#0a1520' },
+  { x: 540, w: 90,  color: '#1565C0', tone: '#0a1520' },
+  { x: 630, w: 90,  color: '#43A047', tone: '#0f1a10' },
+  { x: 720, w: 90,  color: '#FDD835', tone: '#1a1505' },
+  { x: 810, w: 135, color: '#FB8C00', tone: '#1a0e05' },
+  { x: 945, w: 135, color: '#E53935', tone: '#1a0a0a' },
+];
+
+function ClimateBands() {
+  const t = useTime();
+  // Bands fade in 0.0 → 2.0
+  const fadeIn = clamp(t / 2.0, 0, 1);
+  // CTA wash takes over after 42s
+  const fadeOut = 1 - clamp((t - 42) / 1.0, 0, 1);
+
+  // Bottom strip animates in cell-by-cell starting at 16s
+  const stripIn = clamp((t - 16) / 5.0, 0, 1);
+
+  return (
+    <>
+      {/* Tonal background bands (subtle) */}
+      {BANDS.map((b, i) => (
+        <div key={'tone' + i} style={{
+          position: 'absolute',
+          left: b.x, top: 0,
+          width: b.w, height: H - 50,
+          background: b.tone,
+          opacity: 0.55 * fadeIn * fadeOut,
+        }}/>
+      ))}
+
+      {/* Vertical separator lines */}
+      {BANDS.slice(1).map((b, i) => (
+        <div key={'sep' + i} style={{
+          position: 'absolute',
+          left: b.x, top: 0,
+          width: 1, height: H,
+          background: '#ffffff',
+          opacity: 0.06 * fadeIn,
+        }}/>
+      ))}
+
+      {/* Bottom climate strip (the actual thermal bar of the year) */}
+      <div style={{
+        position: 'absolute',
+        left: 0, top: H - 50,
+        width: W, height: 50,
+        display: 'flex',
+        opacity: fadeOut,
+      }}>
+        {BANDS.map((b, i) => {
+          const cellAppear = clamp(stripIn * BANDS.length - i, 0, 1);
+          return (
+            <div key={i} style={{
+              width: b.w,
+              height: '100%',
+              background: b.color,
+              opacity: cellAppear,
+              transform: `scaleY(${0.2 + 0.8 * cellAppear})`,
+              transformOrigin: 'bottom',
+            }}/>
+          );
+        })}
+      </div>
+
+      {/* Month labels */}
+      <div style={{
+        position: 'absolute',
+        left: 0, top: H - 80,
+        width: W, height: 24,
+        display: 'flex',
+        opacity: fadeIn * fadeOut,
+      }}>
+        {MONTHS.map((m, i) => (
+          <div key={m} style={{
+            width: W / 12,
+            textAlign: 'center',
+            fontFamily: 'JetBrains Mono, ui-monospace, monospace',
+            fontSize: 11,
+            color: 'rgba(255,255,255,0.45)',
+            letterSpacing: '0.18em',
+          }}>
+            {m}
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+// ── Climate signal curves (organic, atmospheric) ──────────────────────────
+
+const CURVES = [
+  { color: '#43A047', opacity: 0.85, w: 2.2, baseY: 700,  amp: 60,  freq: 1.0, phase: 0.0, label: '🌡️ TEMPERATURA',  at: 5.5 },
+  { color: '#42A5F5', opacity: 0.55, w: 1.4, baseY: 550,  amp: 80,  freq: 1.4, phase: 1.3, label: '⛅ PLUVIOSIDADE', at: 7.0 },
+  { color: '#FB8C00', opacity: 0.50, w: 1.4, baseY: 900,  amp: 55,  freq: 1.2, phase: 2.4, label: '☀️ RADIAÇÃO',     at: 8.5 },
+  { color: '#FDD835', opacity: 0.45, w: 1.2, baseY: 780,  amp: 40,  freq: 0.8, phase: 0.7, label: '💧 UMIDADE',      at: 10.0 },
+];
+
+function ClimateCurves() {
+  const t = useTime();
+  return (
+    <svg
+      style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
+      width={W} height={H} viewBox={`0 0 ${W} ${H}`}
+    >
+      {CURVES.map((c, i) => (
+        <CurvePath key={i} c={c} t={t} />
+      ))}
+    </svg>
+  );
+}
+
+function CurvePath({ c, t }) {
+  if (t < c.at) return null;
+  const local = t - c.at;
+  const draw = clamp(local / 2.4, 0, 1);
+  const eased = Easing.easeOutCubic(draw);
+  // Subtle drift while on screen
+  const drift = (t - c.at) * 0.15;
+
+  const N = 140;
+  const points = [];
+  for (let i = 0; i < N; i++) {
+    const x = (i / (N - 1)) * W;
+    const yShift =
+      Math.sin(i * 0.06 * c.freq + c.phase + drift) * c.amp +
+      Math.sin(i * 0.18 * c.freq + c.phase * 1.7 + drift * 0.7) * (c.amp * 0.35) +
+      Math.cos(i * 0.04 + c.phase + drift * 0.3) * (c.amp * 0.25);
+    points.push([x, c.baseY + yShift]);
+  }
+  const visible = Math.max(2, Math.floor(points.length * eased));
+  const path = points.slice(0, visible)
+    .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p[0].toFixed(1)} ${p[1].toFixed(1)}`)
+    .join(' ');
+
+  return (
+    <path d={path} fill="none"
+      stroke={c.color} strokeWidth={c.w}
+      strokeOpacity={c.opacity}
+      strokeLinecap="round" strokeLinejoin="round" />
+  );
+}
+
+// ── Constellation dots (key climatic events) ──────────────────────────────
+
+const DOTS = [
+  { x: 200, y: 600, r: 6,   color: '#43A047', label: '🌱 brotação',             sub: 'set · folhas novas',         at: 12.0, kind: 'fen' },
+  { x: 380, y: 520, r: 6,   color: '#66bb6a', label: '🌳 crescimento',          sub: 'out–nov · vigor',            at: 12.4, kind: 'fen' },
+  { x: 560, y: 490, r: 5.5, color: '#FDD835', label: '☀️ pico de calor',        sub: 'jan · estresse',             at: 12.8, kind: 'fen' },
+  { x: 540, y: 460, r: 9,   color: '#ffffff', label: '📍 agora · 22 abr',       sub: 'consolidação',               at: 11.0, kind: 'now', isNow: true },
+  { x: 720, y: 520, r: 5.5, color: '#42A5F5', label: '🌧️ chuvas',              sub: 'fev · risco fúngico',        at: 13.2, kind: 'fen' },
+  { x: 880, y: 580, r: 6,   color: '#FB8C00', label: '🍂 desaceleração',        sub: 'mai · senescência',          at: 13.6, kind: 'fen' },
+  { x: 200, y: 800, r: 6,   color: '#26C6DA', label: '🔄 fim da estação',       sub: 'em 57 dias',                 at: 14.4, kind: 'cal' },
+  { x: 400, y: 860, r: 6,   color: '#26C6DA', label: '💤 mínimo',               sub: 'em 81 dias',                 at: 14.8, kind: 'cal' },
+  { x: 600, y: 900, r: 6,   color: '#26C6DA', label: '🌱 início cultivo',       sub: 'em 105 dias',                at: 15.2, kind: 'cal' },
+  { x: 800, y: 870, r: 6.5, color: '#00ACC1', label: '🧪 retomar adubação',     sub: 'gatilho automático',         at: 15.6, kind: 'cal' },
+  { x: 950, y: 820, r: 6,   color: '#26C6DA', label: '🌸 ápice',                sub: 'em 265 dias',                at: 16.0, kind: 'cal' },
+];
+
+function Constellation() {
+  const t = useTime();
+  // Fade out the constellation when the EventCard takes over
+  const fadeOut = 1 - clamp((t - 29) / 1.5, 0, 1);
+  if (fadeOut <= 0) return null;
+  return (
+    <div style={{ opacity: fadeOut }}>
+      {DOTS.map((d, i) => (
+        <Dot key={i} d={d} t={t} />
+      ))}
+      {/* Connector lines from center to dots */}
+      <svg
+        style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
+        width={W} height={H} viewBox={`0 0 ${W} ${H}`}
+      >
+        {DOTS.filter(d => !d.isNow).map((d, i) => {
+          if (t < d.at) return null;
+          const a = clamp((t - d.at - 0.3) / 0.8, 0, 1);
+          const isMkt = d.kind === 'mkt';
+          return (
+            <line key={i}
+              x1={CENTER.x} y1={CENTER.y - 30}
+              x2={d.x} y2={d.y}
+              stroke={d.color}
+              strokeWidth={isMkt ? 1.4 : 1.1}
+              strokeOpacity={a * (isMkt ? 0.55 : 0.45)}
+              strokeDasharray={isMkt ? '2 6' : '4 6'}
+            />
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+function Dot({ d, t }) {
+  if (t < d.at) return null;
+  const local = t - d.at;
+  const a = clamp(local / 0.5, 0, 1);
+  const eased = Easing.easeOutBack(a);
+  const pulse = d.isNow ? (1 + 0.4 * Math.abs(Math.sin(local * 2.5))) : 1;
+  const isMkt = d.kind === 'mkt';
+
+  return (
+    <>
+      {/* Outer halo for visibility */}
+      <div style={{
+        position: 'absolute',
+        left: d.x - d.r * 2.4, top: d.y - d.r * 2.4,
+        width: d.r * 4.8, height: d.r * 4.8,
+        borderRadius: '50%',
+        background: `radial-gradient(circle, ${d.color}55 0%, transparent 70%)`,
+        opacity: a * 0.7,
+      }}/>
+      <div style={{
+        position: 'absolute',
+        left: d.x - d.r * pulse, top: d.y - d.r * pulse,
+        width: d.r * 2 * pulse, height: d.r * 2 * pulse,
+        borderRadius: '50%',
+        background: d.color,
+        boxShadow: `0 0 12px ${d.color}aa`,
+        opacity: a * (d.isNow ? 0.98 : 0.92),
+        transform: `scale(${eased})`,
+      }}/>
+      {/* Glow ring around 'now' */}
+      {d.isNow && (
+        <>
+          <div style={{
+            position: 'absolute',
+            left: d.x - 36, top: d.y - 36,
+            width: 72, height: 72, borderRadius: '50%',
+            border: '1.5px solid #ffffff',
+            opacity: 0.4 * (1 + 0.5 * Math.sin(local * 1.8)),
+          }}/>
+          <div style={{
+            position: 'absolute',
+            left: d.x - 60, top: d.y - 60,
+            width: 120, height: 120, borderRadius: '50%',
+            border: '1px solid #ffffff',
+            opacity: 0.18 * (1 + 0.5 * Math.cos(local * 1.4)),
+          }}/>
+        </>
+      )}
+      {/* Label + sublabel — bigger, two-line */}
+      <div style={{
+        position: 'absolute',
+        left: d.x + d.r + 10, top: d.y - 16,
+        fontFamily: 'Arial, sans-serif',
+        opacity: clamp((local - 0.4) / 0.6, 0, 1),
+        whiteSpace: 'nowrap',
+        lineHeight: 1.15,
+      }}>
+        <div style={{
+          fontSize: 14,
+          fontWeight: 600,
+          color: d.isNow ? '#ffffff' : (isMkt ? '#7fdfe8' : 'rgba(255,255,255,0.92)'),
+          letterSpacing: '-0.005em',
+          textShadow: '0 1px 4px rgba(0,0,0,0.6)',
+        }}>{d.label}</div>
+        {d.sub && (
+          <div style={{
+            fontFamily: 'JetBrains Mono, ui-monospace, monospace',
+            fontSize: 10,
+            color: isMkt ? 'rgba(127,223,232,0.75)' : 'rgba(255,255,255,0.55)',
+            letterSpacing: '0.08em',
+            marginTop: 2,
+            textTransform: 'uppercase',
+          }}>{d.sub}</div>
+        )}
+      </div>
+    </>
+  );
+}
+
+// ── Center: the plant — concentric rings ──────────────────────────────────
+
+function PlantCore() {
+  const t = useTime();
+  const appear = clamp((t - 1.5) / 1.2, 0, 1);
+  const eased = Easing.easeOutCubic(appear);
+  // Slow breathing
+  const breath = 1 + 0.04 * Math.sin(t * 0.6);
+  // Fade out on CTA
+  const fadeOut = 1 - clamp((t - 42) / 0.8, 0, 1);
+
+  const rings = [
+    { r: 80, color: '#1e4a1e', op: 0.30, w: 0.8 },
+    { r: 60, color: '#2d6a2d', op: 0.42, w: 0.8 },
+    { r: 42, color: '#43A047', op: 0.55, w: 1.0 },
+    { r: 24, color: '#66bb6a', op: 0.70, w: 1.2 },
+  ];
+
+  // Ripple ring expanding outward, repeating
+  const ripplePhase = (t * 0.45) % 1;
+  const rippleR = 24 + ripplePhase * 100;
+  const rippleOp = (1 - ripplePhase) * 0.4;
+
+  return (
+    <div style={{
+      position: 'absolute', inset: 0,
+      opacity: appear * fadeOut,
+      pointerEvents: 'none',
+    }}>
+      {/* Vase / pot stub */}
+      <div style={{
+        position: 'absolute',
+        left: CENTER.x - 12, top: CENTER.y + 50,
+        width: 24, height: 100,
+        background: '#4a3020',
+        opacity: 0.55,
+        transform: `scaleY(${eased})`,
+        transformOrigin: 'top',
+      }}/>
+
+      {/* Concentric rings */}
+      <svg
+        style={{ position: 'absolute', inset: 0 }}
+        width={W} height={H} viewBox={`0 0 ${W} ${H}`}
+      >
+        {rings.map((r, i) => (
+          <circle key={i}
+            cx={CENTER.x} cy={CENTER.y - 30}
+            r={r.r * breath * eased}
+            fill="none"
+            stroke={r.color}
+            strokeWidth={r.w}
+            strokeOpacity={r.op}
+          />
+        ))}
+        {/* Center filled dot */}
+        <circle
+          cx={CENTER.x} cy={CENTER.y - 30}
+          r={9 * breath * eased}
+          fill="#43A047"
+          fillOpacity={0.85}
+        />
+        {/* Ripple */}
+        <circle
+          cx={CENTER.x} cy={CENTER.y - 30}
+          r={rippleR}
+          fill="none"
+          stroke="#43A047"
+          strokeWidth="1"
+          strokeOpacity={rippleOp}
+        />
+      </svg>
+    </div>
+  );
+}
+
+// ── HUD ───────────────────────────────────────────────────────────────────
+
+function HUD() {
+  const t = useTime();
+  const phases = [
+    { at: 0.0,  text: 'CALENDÁRIO DE CULTIVO' },
+    { at: 1.0,  text: '01 · localizando cliente' },
+    { at: 5.0,  text: '02 · sinais climáticos' },
+    { at: 11.0, text: '03 · marcos do ano' },
+    { at: 16.0, text: '04 · 48 semanas · barra térmica' },
+    { at: 22.0, text: '05 · cenário · fenologia' },
+    { at: 30.0, text: '06 · evento da semana · Google Agenda' },
+    { at: 42.0, text: '07 · entregue toda segunda' },
+  ];
+  let active = phases[0];
+  for (const p of phases) if (t >= p.at) active = p;
+
+  const fadeOut = 1 - clamp((t - 42) / 0.6, 0, 1);
+
+  return (
+    <>
+      {/* Top center: brand */}
+      <div style={{
+        position: 'absolute',
+        left: 0, right: 0, top: 60,
+        textAlign: 'center',
+        fontFamily: 'Arial, sans-serif',
+        fontSize: 13,
+        color: 'rgba(255,255,255,0.32)',
+        letterSpacing: '0.28em',
+        fontWeight: 500,
+        opacity: fadeOut,
+      }}>
+        CALENDÁRIO DE CULTIVO
+      </div>
+      <div style={{
+        position: 'absolute',
+        left: 0, right: 0, top: 86,
+        textAlign: 'center',
+        fontFamily: 'Arial, sans-serif',
+        fontSize: 12,
+        color: 'rgba(67,160,71,0.55)',
+        letterSpacing: '0.16em',
+        opacity: fadeOut,
+      }}>
+        cultivoornamental.com.br
+      </div>
+
+      {/* Top-left meta */}
+      <div style={{
+        position: 'absolute', left: 40, top: 40,
+        fontFamily: 'JetBrains Mono, ui-monospace, monospace',
+        fontSize: 11,
+        color: 'rgba(255,255,255,0.5)',
+        letterSpacing: '0.14em',
+        opacity: fadeOut,
+      }}>
+        v194 · t={t.toFixed(2)}s
+      </div>
+      <div style={{
+        position: 'absolute', left: 40, top: 70,
+        fontFamily: 'JetBrains Mono, ui-monospace, monospace',
+        fontSize: 14,
+        color: '#43A047',
+        letterSpacing: '0.08em',
+        fontWeight: 500,
+        opacity: fadeOut,
+      }}>
+        {active.text}
+      </div>
+
+      <ClientMeta />
+    </>
+  );
+}
+
+function ClientMeta() {
+  const t = useTime();
+  const appear = clamp((t - 0.6) / 0.6, 0, 1);
+  const cp = clamp((t - 1.2) / 1.5, 0, 1);
+  const lat = (-22.7253 * Easing.easeOutCubic(cp)).toFixed(4);
+  const lng = (-47.6492 * Easing.easeOutCubic(cp)).toFixed(4);
+  const fadeOut = 1 - clamp((t - 42) / 0.6, 0, 1);
+
+  return (
+    <div style={{
+      position: 'absolute', right: 40, top: 40,
+      textAlign: 'right',
+      fontFamily: 'JetBrains Mono, ui-monospace, monospace',
+      fontSize: 12,
+      color: 'rgba(255,255,255,0.85)',
+      opacity: appear * fadeOut,
+      transform: `translateY(${(1 - appear) * 6}px)`,
+    }}>
+      <div style={{ color: 'rgba(255,255,255,0.45)', letterSpacing: '0.14em', marginBottom: 4 }}>
+        📍 PIRACICABA · SP · BRASIL
+      </div>
+      <div style={{ fontSize: 13, fontVariantNumeric: 'tabular-nums' }}>
+        LAT {lat}°  ·  LNG {lng}°
+      </div>
+      <div style={{ marginTop: 2, color: 'rgba(255,255,255,0.45)' }}>
+        elev 547 m  ·  zona Cwa
+      </div>
+    </div>
+  );
+}
+
+// ── Phenology ribbon (between curves and event card) ──────────────────────
+
+const PHENO = [
+  { emoji: '🍂', name: 'consolidação',  pct: 55, color: '#FB8C00' },
+  { emoji: '💤', name: 'repouso',       pct: 11, color: '#7a7468' },
+  { emoji: '🌱', name: 'brotação',      pct:  0, color: '#43A047' },
+  { emoji: '🌳', name: 'crescimento',   pct: 34, color: '#2d6a2d' },
+  { emoji: '🌸', name: 'florescimento', pct:  0, color: '#E53935' },
+];
+
+function PhenologyLayer() {
+  const t = useTime();
+  const start = 22.0, end = 30.0;
+  if (t < start) return null;
+  const local = t - start;
+  const fadeIn = clamp(local / 0.8, 0, 1);
+  const fadeOut = 1 - clamp((t - end) / 1.0, 0, 1);
+  const opacity = fadeIn * fadeOut;
+  const drawPct = clamp(local / 1.4, 0, 1);
+
+  return (
+    <div style={{
+      position: 'absolute',
+      left: 40, top: 1500,
+      right: 40,
+      opacity,
+    }}>
+      <div style={{
+        fontFamily: 'JetBrains Mono, ui-monospace, monospace',
+        fontSize: 11,
+        color: 'rgba(255,255,255,0.55)',
+        letterSpacing: '0.14em',
+        marginBottom: 12,
+      }}>
+        🔄 ESTADO FENOLÓGICO · ESTA SEMANA
+      </div>
+      <div style={{
+        display: 'flex',
+        height: 28,
+        border: '1px solid rgba(67,160,71,0.5)',
+        background: 'rgba(0,0,0,0.4)',
+      }}>
+        {PHENO.map((p, i) => {
+          const w = drawPct * p.pct;
+          if (w === 0) return null;
+          return (
+            <div key={i} style={{
+              width: `${w}%`,
+              background: p.color,
+              opacity: 0.9,
+            }}/>
+          );
+        })}
+      </div>
+      <div style={{
+        display: 'flex',
+        gap: 32,
+        marginTop: 14,
+        fontFamily: 'JetBrains Mono, ui-monospace, monospace',
+        fontSize: 13,
+        color: 'rgba(255,255,255,0.85)',
+      }}>
+        {PHENO.map((p, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 18 }}>{p.emoji}</span>
+            <span style={{ color: 'rgba(255,255,255,0.55)' }}>{p.name}</span>
+            <span style={{
+              fontVariantNumeric: 'tabular-nums',
+              color: p.pct > 0 ? '#ffffff' : 'rgba(255,255,255,0.3)',
+              fontWeight: 600,
+            }}>
+              {p.pct}%
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── EVENT CARD — exact format do calendário real ──────────────────────────
+
+// Cascade de semanas: 6 janelas empilhadas (3 atrás, 1 ativa, 2 à frente)
+const CASCADE = [
+  { weeks: -3, label: 'SEMANA · 1–8 ABR',   tag: '🟡 SEMANA · CHUVA INTENSA',     dateLabel: '📅 1 – 8 Abr · Calendário de Cultivo' },
+  { weeks: -2, label: 'SEMANA · 8–15 ABR',  tag: '🟢 SEMANA · TRANSIÇÃO',          dateLabel: '📅 8 – 15 Abr · Calendário de Cultivo' },
+  { weeks: -1, label: 'SEMANA · 15–22 ABR', tag: '🟢 SEMANA · TEMPERATURAS AMENAS',dateLabel: '📅 15 – 22 Abr · Calendário de Cultivo' },
+  { weeks:  0, label: 'SEMANA · 22–30 ABR', tag: '🟢 SEMANA · TEMPERATURAS AMENAS',dateLabel: '📅 22 – 30 Abr · Calendário de Cultivo', active: true },
+  { weeks: +1, label: 'SEMANA · 30–6 MAI',  tag: '🟢 SEMANA · ESTÁVEL',            dateLabel: '📅 30 Abr – 6 Mai · Calendário de Cultivo' },
+  { weeks: +2, label: 'SEMANA · 6–13 MAI',  tag: '🟠 SEMANA · DIA DAS MÃES',       dateLabel: '📅 6 – 13 Mai · Calendário de Cultivo' },
+];
+
+function EventCard() {
+  const t = useTime();
+  const start = 30.0;
+  if (t < start) return null;
+  const local = t - start;
+
+  const fadeOut = 1 - clamp((t - 42) / 0.8, 0, 1);
+  if (fadeOut <= 0) return null;
+
+  // Each cascade window enters one after another
+  // Active window enters first; back/front windows fan out around it
+  const order = [3, 2, 4, 1, 5, 0]; // active, then closest, then far
+  const enterTimings = order.map((idx, n) => ({ idx, at: 0 + n * 0.35 }));
+
+  return (
+    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: fadeOut }}>
+      {CASCADE.map((win, i) => {
+        const timing = enterTimings.find(x => x.idx === i);
+        const startLocal = timing ? timing.at : 0;
+        const e = clamp((local - startLocal) / 0.7, 0, 1);
+        const eased = Easing.easeOutCubic(e);
+        if (eased <= 0) return null;
+
+        // Stack: weeks=-3..0 go behind/up-left, weeks=+1,+2 go front/down-right
+        // Active (weeks=0) sits centered and largest
+        const w = win.weeks;
+        const isActive = w === 0;
+        const cardW = 760;
+        const cardH = 660;
+        const cx = (W - cardW) / 2;
+        const cy = 230;
+
+        // Offset/rotation per stack position
+        const offsetX = w * 70;       // 0, ±70, ±140, ±210
+        const offsetY = -Math.abs(w) * 24 + (w > 0 ? 36 : 0);
+        const rot = w * -1.8;         // very subtle fan
+        const scale = isActive ? 1.0 : 0.94 - Math.abs(w) * 0.025;
+        const blur = isActive ? 0 : Math.min(2 + Math.abs(w) * 1.2, 6);
+        const alpha = isActive ? 1 : 0.55 - Math.abs(w) * 0.08;
+        const z = isActive ? 100 : (50 - Math.abs(w) * 5);
+
+        return (
+          <div key={i} style={{
+            position: 'absolute',
+            left: cx + offsetX,
+            top: cy + offsetY + (1 - eased) * 40,
+            width: cardW, height: cardH,
+            transform: `rotate(${rot}deg) scale(${scale * eased + (1-eased)*0.85})`,
+            transformOrigin: 'center top',
+            opacity: eased * alpha,
+            filter: blur > 0 ? `blur(${blur}px)` : 'none',
+            zIndex: z,
+            background: 'rgba(15, 26, 16, 0.94)',
+            border: `1px solid ${isActive ? 'rgba(67,160,71,0.55)' : 'rgba(67,160,71,0.25)'}`,
+            boxShadow: isActive
+              ? '0 30px 100px rgba(0,0,0,0.7), 0 0 0 1px rgba(67,160,71,0.15) inset'
+              : '0 16px 40px rgba(0,0,0,0.5)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            overflow: 'hidden',
+            fontFamily: 'Arial, sans-serif',
+            color: '#f7f5f0',
+            padding: '24px 32px',
+          }}>
+            {isActive
+              ? <ActiveCardBody local={local} win={win} />
+              : <PreviewCardBody win={win} />
+            }
+          </div>
+        );
+      })}
+
+      {/* Caption explaining the cascade */}
+      <CascadeCaption local={local} />
+    </div>
+  );
+}
+
+function ActiveCardBody({ local, win }) {
+  const sectionTimings = [0.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0];
+  return (
+    <>
+      <CardHeader at={local} win={win} />
+      <Sec at={local} t0={sectionTimings[1]}><ClimateLine /></Sec>
+      <Sec at={local} t0={sectionTimings[2]}><Production /></Sec>
+      <Sec at={local} t0={sectionTimings[3]}><Fito /></Sec>
+      <Sec at={local} t0={sectionTimings[4]}><Organic /></Sec>
+      <Sec at={local} t0={sectionTimings[5]}><Inorganic /></Sec>
+      <Sec at={local} t0={sectionTimings[6]}><Markers /></Sec>
+    </>
+  );
+}
+
+function PreviewCardBody({ win }) {
+  // Skeleton view — just enough detail to read as "another week"
+  return (
+    <>
+      <div style={{ marginBottom: 16 }}>
+        <div style={{
+          fontFamily: 'JetBrains Mono, ui-monospace, monospace',
+          fontSize: 11,
+          color: 'rgba(255,255,255,0.45)',
+          letterSpacing: '0.14em',
+          marginBottom: 8,
+        }}>{win.tag}</div>
+        <div style={{
+          fontSize: 22, fontWeight: 600,
+          color: 'rgba(255,255,255,0.85)',
+          letterSpacing: '-0.01em',
+        }}>{win.dateLabel}</div>
+      </div>
+      {/* Skeleton rows */}
+      <div style={{ opacity: 0.5 }}>
+        {['🌡️','🌿','🔬','🌱','📋','📆'].map((emoji, i) => (
+          <div key={i} style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            padding: '14px 0',
+            borderTop: '1px solid rgba(67,160,71,0.15)',
+          }}>
+            <span style={{ fontSize: 16, width: 24 }}>{emoji}</span>
+            <div style={{
+              flex: 1, height: 8,
+              background: 'rgba(255,255,255,0.12)',
+              borderRadius: 4,
+              maxWidth: `${280 + (i*23 % 200)}px`,
+            }}/>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function CascadeCaption({ local }) {
+  const a = clamp((local - 4.5) / 0.8, 0, 1);
+  if (a <= 0) return null;
+  return (
+    <div style={{
+      position: 'absolute',
+      left: 0, right: 0,
+      bottom: 90,
+      textAlign: 'center',
+      opacity: a,
+    }}>
+      <div style={{
+        fontFamily: 'JetBrains Mono, ui-monospace, monospace',
+        fontSize: 13,
+        color: 'rgba(255,255,255,0.55)',
+        letterSpacing: '0.18em',
+        marginBottom: 6,
+      }}>UMA NOVA JANELA · TODA SEMANA</div>
+      <div style={{
+        fontFamily: 'Arial, sans-serif',
+        fontSize: 22,
+        color: '#43A047',
+        fontWeight: 600,
+        letterSpacing: '-0.01em',
+      }}>52 eventos por ano · automatizados no Google Agenda</div>
+    </div>
+  );
+}
+
+function Sec({ at, t0, children }) {
+  const a = clamp((at - t0) / 0.5, 0, 1);
+  const e = Easing.easeOutCubic(a);
+  return (
+    <div style={{
+      opacity: a,
+      transform: `translateY(${(1 - e) * 10}px)`,
+      marginBottom: 4,
+    }}>
+      {children}
+    </div>
+  );
+}
+
+function CardHeader({ at, win }) {
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div style={{
+        fontFamily: 'JetBrains Mono, ui-monospace, monospace',
+        fontSize: 11,
+        color: 'rgba(255,255,255,0.5)',
+        letterSpacing: '0.14em',
+        marginBottom: 8,
+      }}>
+        {win ? win.tag : '🟢 SEMANA · TEMPERATURAS AMENAS'}
+      </div>
+      <div style={{
+        fontSize: 24, fontWeight: 600,
+        color: '#ffffff',
+        letterSpacing: '-0.01em',
+      }}>
+        {win ? win.dateLabel : '📅 22 – 30 Abr · Calendário de Cultivo'}
+      </div>
+    </div>
+  );
+}
+
+function ClimateLine() {
+  return (
+    <div style={sec()}>
+      <div style={{ fontSize: 14, color: '#f7f5f0', lineHeight: 1.7 }}>
+        🌡️ Mín: <strong>15.5°C</strong> · Média: <strong>19.1°C</strong> · Máx: <strong>23°C</strong><br/>
+        ⛅ Chuva — 14% de chance de chuva nos próximos 3 dias.
+      </div>
+      <div style={{ marginTop: 6, fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>
+        📊 Recordes desta semana nos últimos 10 anos: mín 4.4°C · máx 32.5°C
+      </div>
+    </div>
+  );
+}
+
+function Production() {
+  return (
+    <div style={sec()}>
+      <div style={secTitle()}>🌿 SUSPENSÃO OU PRODUÇÃO</div>
+      <div style={{ fontSize: 14, color: '#f7f5f0' }}>
+        ✅ <strong>Produção</strong> — faltam 1 semana
+      </div>
+      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', marginTop: 4 }}>
+        🧮🌡️ Horas de frio (ornamental): 0 h → esperado até primavera: 1012.7 a 857.5 h
+      </div>
+    </div>
+  );
+}
+
+function Fito() {
+  return (
+    <div style={sec()}>
+      <div style={secTitle()}>🔬 FITOSSANIDADE — ALERTAS</div>
+      <div style={{ fontSize: 14, color: '#f7f5f0' }}>
+        🍄 Avaliação sanitária: <strong>preventivo de fungos foliares</strong>
+      </div>
+      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', marginTop: 4, lineHeight: 1.5 }}>
+        → Próximas semanas com alta probabilidade de chuva. Considere preventivo com fungicidas de contato.
+      </div>
+    </div>
+  );
+}
+
+function Organic() {
+  return (
+    <div style={sec()}>
+      <div style={secTitle()}>🌱 ADUBAÇÃO ORGÂNICA</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, fontSize: 13 }}>
+        <div>🌱 Biogold: <span style={{ color: 'rgba(255,255,255,0.5)' }}>Suspender</span></div>
+        <div>🌱 Peletizado: <span style={{ color: 'rgba(255,255,255,0.5)' }}>Suspender</span></div>
+        <div>🌱 Maruta: <strong style={{ color: '#43A047' }}>51% restante</strong></div>
+      </div>
+    </div>
+  );
+}
+
+function Inorganic() {
+  return (
+    <div style={sec()}>
+      <div style={secTitle()}>📋 PLANEJAMENTO INORGÂNICO</div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, fontSize: 13 }}>
+        <div>🧪 Uso superficial: <span style={{ color: 'rgba(255,255,255,0.5)' }}>Suspender</span></div>
+        <div>🧪 Uso incorporado: <span style={{ color: 'rgba(255,255,255,0.5)' }}>Suspender</span></div>
+      </div>
+    </div>
+  );
+}
+
+function Markers() {
+  const items = [
+    { emoji: '🔄', label: 'Fim da estação atual',         days: 57  },
+    { emoji: '💤', label: 'Mínimo do crescimento',        days: 81  },
+    { emoji: '🌱', label: 'Início estação de cultivo',    days: 105 },
+    { emoji: '🌧️', label: 'Ápice das chuvas',             days: 150 },
+    { emoji: '🌸', label: 'Ápice do crescimento',         days: 265 },
+  ];
+  return (
+    <div style={sec()}>
+      <div style={secTitle()}>📆 CONTADORES DO CALENDÁRIO</div>
+      {items.map((m, i) => (
+        <div key={i} style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          padding: '4px 0',
+          fontSize: 13,
+          fontFamily: 'JetBrains Mono, ui-monospace, monospace',
+          color: '#f7f5f0',
+        }}>
+          <span style={{ fontSize: 14, width: 22 }}>{m.emoji}</span>
+          <span style={{ flex: 1 }}>{m.label}</span>
+          <span style={{
+            color: '#43A047',
+            fontWeight: 600,
+            fontVariantNumeric: 'tabular-nums',
+          }}>
+            em {m.days} dias
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function sec() {
+  return {
+    padding: '12px 0',
+    borderTop: '1px solid rgba(67,160,71,0.18)',
+  };
+}
+function secTitle() {
+  return {
+    fontFamily: 'JetBrains Mono, ui-monospace, monospace',
+    fontSize: 10,
+    letterSpacing: '0.16em',
+    color: '#43A047',
+    marginBottom: 8,
+  };
+}
+
+// ── Tally — accumulating counter (mantém a ideia de soma) ─────────────────
+
+function Tally() {
+  const t = useTime();
+  const sigCount = CURVES.filter(c => t >= c.at).length;
+  const dotCount = DOTS.filter(d => t >= d.at).length;
+  const stripPct = Math.floor(clamp((t - 16) / 5.0, 0, 1) * 100);
+  const phenoOn = t >= 22.0 ? 5 : 0;
+  const eventOn = t >= 30 ? 1 : 0;
+  // Hide tally during phenology+event phase to avoid collision
+  const hide = t >= 21.5 && t < 41.5;
+  const fadeOut = (1 - clamp((t - 41) / 1.0, 0, 1)) * (hide ? 0 : 1);
+
+  const rows = [
+    ['🌡️ sinais',     `${sigCount} / 4`],
+    ['📍 marcos',     `${dotCount} / 6`],
+    ['📊 ano',        `${stripPct}%`],
+    ['🍂 fenologia',  `${phenoOn} / 5`],
+    ['📅 evento',     `${eventOn} / 1`],
+  ];
+
+  return (
+    <div style={{
+      position: 'absolute',
+      left: 40, bottom: 130,
+      fontFamily: 'JetBrains Mono, ui-monospace, monospace',
+      fontSize: 11,
+      color: 'rgba(255,255,255,0.85)',
+      letterSpacing: '0.04em',
+      opacity: fadeOut,
+    }}>
+      <div style={{
+        color: 'rgba(255,255,255,0.4)',
+        letterSpacing: '0.14em',
+        marginBottom: 8,
+      }}>
+        ACUMULANDO
+      </div>
+      {rows.map(([k, v]) => (
+        <div key={k} style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          width: 220,
+          padding: '3px 0',
+          borderBottom: '1px solid rgba(255,255,255,0.08)',
+        }}>
+          <span style={{ color: 'rgba(255,255,255,0.5)' }}>{k}</span>
+          <span style={{ fontVariantNumeric: 'tabular-nums' }}>{v}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── CTA Overlay (final) ───────────────────────────────────────────────────
+
+function CTAOverlay() {
+  const t = useTime();
+  if (t < 42.0) return null;
+  const local = t - 42.0;
+  const wash = clamp(local / 1.0, 0, 1);
+  const easedWash = Easing.easeInOutCubic(wash);
+
+  return (
+    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: '#0d1a0d',
+        opacity: easedWash,
+      }}/>
+      <div style={{
+        position: 'absolute',
+        left: 0, right: 0, top: '50%',
+        height: 6, display: 'flex',
+        opacity: clamp((local - 0.6) / 0.5, 0, 1),
+      }}>
+        {PALETTE.map((c, i) => (
+          <div key={i} style={{ flex: 1, background: c }}/>
+        ))}
+      </div>
+      {local > 1.0 && <CTAText local={local - 1.0} />}
+    </div>
+  );
+}
+
+function CTAText({ local }) {
+  const lines = [
+    { text: 'Sua planta,',     color: '#f7f5f0', weight: 300, at: 0.0 },
+    { text: 'seu clima,',      color: '#f7f5f0', weight: 300, at: 0.4 },
+    { text: 'seu calendário.', color: '#FDD835', weight: 700, at: 0.8 },
+  ];
+  return (
+    <div style={{
+      position: 'absolute',
+      left: 60, top: 200,
+      fontFamily: 'Arial, sans-serif',
+      fontSize: 72, lineHeight: 1.1,
+      letterSpacing: '-0.04em',
+    }}>
+      {lines.map((l, i) => {
+        const a = clamp((local - l.at) / 0.6, 0, 1);
+        const e = Easing.easeOutCubic(a);
+        return (
+          <div key={i} style={{
+            color: l.color, fontWeight: l.weight,
+            opacity: a,
+            transform: `translateY(${(1 - e) * 24}px)`,
+          }}>
+            {l.text}
+          </div>
+        );
+      })}
+      {local > 2.0 && (
+        <div style={{
+          position: 'absolute',
+          left: 0, top: 420,
+          width: 960,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-end',
+          opacity: clamp((local - 2.0) / 0.6, 0, 1),
+        }}>
+          <div style={{
+            fontFamily: 'JetBrains Mono, ui-monospace, monospace',
+            color: '#9bbfa0', fontSize: 14, letterSpacing: '0.1em',
+          }}>
+            A PARTIR DE
+            <div style={{
+              marginTop: 8, color: '#f7f5f0',
+              fontSize: 56, fontFamily: 'Arial, sans-serif',
+              fontWeight: 300, letterSpacing: '-0.02em',
+            }}>
+              R$ 19,90<span style={{ fontSize: 22, color: '#9bbfa0', marginLeft: 8 }}>/ mês</span>
+            </div>
+          </div>
+          <div style={{
+            textAlign: 'right',
+            fontFamily: 'JetBrains Mono, ui-monospace, monospace',
+          }}>
+            <div style={{
+              fontSize: 13, color: '#9bbfa0',
+              letterSpacing: '0.12em', marginBottom: 8,
+            }}>
+              📅 ASSINE EM
+            </div>
+            <div style={{
+              fontSize: 32, color: '#f7f5f0',
+              borderBottom: '2px solid #FDD835',
+              paddingBottom: 4, display: 'inline-block',
+            }}>
+              cultivoornamental.com.br
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+window.ClimateBands = ClimateBands;
+window.ClimateCurves = ClimateCurves;
+window.Constellation = Constellation;
+window.PlantCore = PlantCore;
+window.HUD = HUD;
+window.PhenologyLayer = PhenologyLayer;
+window.EventCard = EventCard;
+window.Tally = Tally;
+window.CTAOverlay = CTAOverlay;
+
+</script>
+
+<script type="text/babel" data-presets="react">
+function TimeLabel() {
+  const time = useTime();
+  React.useEffect(() => {
+    const root = document.getElementById('video-root');
+    if (root) root.setAttribute('data-screen-label', `t=${Math.floor(time)}s`);
+  }, [Math.floor(time)]);
+  return null;
+}
+
+function App() {
+  return (
+    <div id="video-root" data-screen-label="t=0s" style={{ position: 'absolute', inset: 0 }}>
+      <Stage
+        width={1080}
+        height={1920}
+        duration={50}
+        background="#0d1a0d"
+        persistKey="cultivo-mobile"
+        loop={true}
+        autoplay={true}
+      >
+        <TimeLabel />
+        <ClimateBands />
+        <ClimateCurves />
+        <Constellation />
+        <PlantCore />
+        <PhenologyLayer />
+        <EventCard />
+        <Tally />
+        <HUD />
+        <CTAOverlay />
+      </Stage>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
