@@ -707,7 +707,7 @@ const MONTHS = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV
 
 // Stage geometry — designed against 1920×1080
 const W = 1080, H = 1920;
-const CENTER = { x: 540, y: 960 };
+const CENTER = { x: 540, y: 820 };
 
 // ── Background: vertical climate bands (the "year") ───────────────────────
 
@@ -808,10 +808,10 @@ function ClimateBands() {
 // ── Climate signal curves (organic, atmospheric) ──────────────────────────
 
 const CURVES = [
-  { color: '#43A047', opacity: 0.85, w: 2.2, baseY: 700,  amp: 60,  freq: 1.0, phase: 0.0, label: '🌡️ TEMPERATURA',  at: 5.5 },
-  { color: '#42A5F5', opacity: 0.55, w: 1.4, baseY: 550,  amp: 80,  freq: 1.4, phase: 1.3, label: '⛅ PLUVIOSIDADE', at: 7.0 },
-  { color: '#FB8C00', opacity: 0.50, w: 1.4, baseY: 900,  amp: 55,  freq: 1.2, phase: 2.4, label: '☀️ RADIAÇÃO',     at: 8.5 },
-  { color: '#FDD835', opacity: 0.45, w: 1.2, baseY: 780,  amp: 40,  freq: 0.8, phase: 0.7, label: '💧 UMIDADE',      at: 10.0 },
+  { color: '#43A047', opacity: 0.85, w: 2.2, baseY: 580,  amp: 55,  freq: 1.0, phase: 0.0, label: '🌡️ TEMPERATURA',  at: 5.5 },
+  { color: '#42A5F5', opacity: 0.55, w: 1.4, baseY: 440,  amp: 70,  freq: 1.4, phase: 1.3, label: '⛅ PLUVIOSIDADE', at: 7.0 },
+  { color: '#FB8C00', opacity: 0.50, w: 1.4, baseY: 750,  amp: 50,  freq: 1.2, phase: 2.4, label: '☀️ RADIAÇÃO',     at: 8.5 },
+  { color: '#FDD835', opacity: 0.45, w: 1.2, baseY: 660,  amp: 35,  freq: 0.8, phase: 0.7, label: '💧 UMIDADE',      at: 10.0 },
 ];
 
 function ClimateCurves() {
@@ -862,17 +862,20 @@ function CurvePath({ c, t }) {
 // ── Constellation dots (key climatic events) ──────────────────────────────
 
 const DOTS = [
-  { x: 60,  y: 540, r: 9,   color: '#43A047', label: '🌱 brotação',             sub: 'set · folhas novas',         at: 12.0, kind: 'fen' },
-  { x: 60,  y: 670, r: 9,   color: '#66bb6a', label: '🌳 crescimento',          sub: 'out–nov · vigor',            at: 12.4, kind: 'fen' },
-  { x: 60,  y: 790, r: 8,   color: '#FDD835', label: '☀️ pico de calor',        sub: 'jan · estresse',             at: 12.8, kind: 'fen' },
-  { x: 540, y: 300, r: 12,  color: '#ffffff', label: '📍 agora · 22 abr',       sub: 'consolidação',               at: 11.0, kind: 'now', isNow: true },
-  { x: 60,  y: 920, r: 8,   color: '#42A5F5', label: '🌧️ chuvas',              sub: 'fev · risco fúngico',        at: 13.2, kind: 'fen' },
-  { x: 60,  y: 1050, r: 9,  color: '#FB8C00', label: '🍂 desaceleração',        sub: 'mai · senescência',          at: 13.6, kind: 'fen' },
-  { x: 60,  y: 1200, r: 9,  color: '#26C6DA', label: '🔄 fim da estação',       sub: 'em 57 dias',                 at: 14.4, kind: 'cal' },
-  { x: 60,  y: 1320, r: 9,  color: '#26C6DA', label: '💤 mínimo',               sub: 'em 81 dias',                 at: 14.8, kind: 'cal' },
-  { x: 60,  y: 1430, r: 9,  color: '#26C6DA', label: '🌱 início cultivo',       sub: 'em 105 dias',                at: 15.2, kind: 'cal' },
-  { x: 60,  y: 1540, r: 10, color: '#00ACC1', label: '🧪 retomar adubação',     sub: 'gatilho automático',         at: 15.6, kind: 'cal' },
-  { x: 60,  y: 1650, r: 9,  color: '#26C6DA', label: '🌸 ápice',                sub: 'em 265 dias',                at: 16.0, kind: 'cal' },
+  // Ponto "agora" — centro, destaque
+  { x: 540, y: 480,  r: 14,  color: '#ffffff', label: '📍 agora · 22 abr',    sub: 'consolidação',           at: 11.0, kind: 'now', isNow: true },
+  // Fenológicos — arco orgânico pela tela
+  { x: 200, y: 620,  r: 10,  color: '#43A047', label: '🌱 brotação',          sub: 'set · folhas novas',     at: 12.0, kind: 'fen' },
+  { x: 820, y: 700,  r: 10,  color: '#66bb6a', label: '🌳 crescimento',       sub: 'out–nov · vigor',        at: 12.4, kind: 'fen' },
+  { x: 160, y: 840,  r: 9,   color: '#FDD835', label: '☀️ pico de calor',     sub: 'jan · estresse',         at: 12.8, kind: 'fen' },
+  { x: 860, y: 960,  r: 9,   color: '#42A5F5', label: '🌧️ chuvas',           sub: 'fev · risco fúngico',    at: 13.2, kind: 'fen' },
+  { x: 240, y: 1080, r: 10,  color: '#FB8C00', label: '🍂 desaceleração',     sub: 'mai · senescência',      at: 13.6, kind: 'fen' },
+  // Operacionais — faixa central-baixa
+  { x: 180, y: 1260, r: 10,  color: '#26C6DA', label: '🔄 fim da estação',    sub: 'em 57 dias',             at: 14.4, kind: 'cal' },
+  { x: 760, y: 1340, r: 10,  color: '#26C6DA', label: '💤 mínimo',            sub: 'em 81 dias',             at: 14.8, kind: 'cal' },
+  { x: 300, y: 1450, r: 10,  color: '#26C6DA', label: '🌱 início cultivo',    sub: 'em 105 dias',            at: 15.2, kind: 'cal' },
+  { x: 820, y: 1540, r: 11,  color: '#00ACC1', label: '🧪 adubação',          sub: 'gatilho automático',     at: 15.6, kind: 'cal' },
+  { x: 400, y: 1640, r: 10,  color: '#26C6DA', label: '🌸 ápice',             sub: 'em 265 dias',            at: 16.0, kind: 'cal' },
 ];
 
 function Constellation() {
@@ -896,7 +899,7 @@ function Constellation() {
           const isMkt = d.kind === 'mkt';
           return (
             <line key={i}
-              x1={CENTER.x} y1={CENTER.y - 30}
+              x1={CENTER.x} y1={CENTER.y}
               x2={d.x} y2={d.y}
               stroke={d.color}
               strokeWidth={isMkt ? 1.4 : 1.1}
@@ -961,7 +964,9 @@ function Dot({ d, t }) {
       {/* Label + sublabel — bigger, two-line */}
       <div style={{
         position: 'absolute',
-        left: d.x + d.r + 14, top: d.y - 20,
+        left: d.x < 540 ? d.x + d.r + 12 : 'auto',
+        right: d.x >= 540 ? W - d.x + d.r + 12 : 'auto',
+        top: d.y - 22,
         fontFamily: 'Arial, sans-serif',
         opacity: clamp((local - 0.4) / 0.6, 0, 1),
         whiteSpace: 'nowrap',
@@ -1089,7 +1094,7 @@ function HUD() {
       {/* Top center: brand */}
       <div style={{
         position: 'absolute',
-        left: 0, right: 0, top: 80,
+        left: 0, right: 0, top: 50,
         textAlign: 'center',
         fontFamily: 'Arial, sans-serif',
         fontSize: 18,
@@ -1102,7 +1107,7 @@ function HUD() {
       </div>
       <div style={{
         position: 'absolute',
-        left: 0, right: 0, top: 110,
+        left: 0, right: 0, top: 76,
         textAlign: 'center',
         fontFamily: 'Arial, sans-serif',
         fontSize: 16,
@@ -1115,7 +1120,8 @@ function HUD() {
 
       {/* Top-left meta */}
       <div style={{
-        position: 'absolute', left: 40, top: 160,
+        position: 'absolute', left: 0, right: 0, top: 108,
+        textAlign: 'center',
         fontFamily: 'JetBrains Mono, ui-monospace, monospace',
         fontSize: 18,
         color: 'rgba(255,255,255,0.5)',
@@ -1125,7 +1131,8 @@ function HUD() {
         v194 · t={t.toFixed(2)}s
       </div>
       <div style={{
-        position: 'absolute', left: 40, top: 200,
+        position: 'absolute', left: 0, right: 0, top: 138,
+        textAlign: 'center',
         fontFamily: 'JetBrains Mono, ui-monospace, monospace',
         fontSize: 24,
         color: '#43A047',
@@ -1151,8 +1158,8 @@ function ClientMeta() {
 
   return (
     <div style={{
-      position: 'absolute', right: 40, top: 160,
-      textAlign: 'right',
+      position: 'absolute', left: 0, right: 0, top: 185,
+      textAlign: 'center',
       fontFamily: 'JetBrains Mono, ui-monospace, monospace',
       fontSize: 18,
       color: 'rgba(255,255,255,0.85)',
@@ -1195,8 +1202,8 @@ function PhenologyLayer() {
   return (
     <div style={{
       position: 'absolute',
-      left: 60, top: 1620,
-      right: 60,
+      left: 80, top: 1700,
+      right: 80,
       opacity,
     }}>
       <div style={{
@@ -1291,10 +1298,10 @@ function EventCard() {
         // Active (weeks=0) sits centered and largest
         const w = win.weeks;
         const isActive = w === 0;
-        const cardW = 980;
-        const cardH = 820;
+        const cardW = 1000;
+        const cardH = 900;
         const cx = (W - cardW) / 2;
-        const cy = 1050;
+        const cy = 980;
 
         // Offset/rotation per stack position
         const offsetX = w * 70;       // 0, ±70, ±140, ±210
@@ -1606,7 +1613,8 @@ function Tally() {
   return (
     <div style={{
       position: 'absolute',
-      left: 60, bottom: 160,
+      left: 0, right: 0, bottom: 160,
+      textAlign: 'center',
       fontFamily: 'JetBrains Mono, ui-monospace, monospace',
       fontSize: 11,
       color: 'rgba(255,255,255,0.85)',
