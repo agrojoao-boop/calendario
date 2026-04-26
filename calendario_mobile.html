@@ -706,8 +706,8 @@ const PALETTE = ['#1565C0', '#42A5F5', '#43A047', '#FDD835', '#FB8C00', '#E53935
 const MONTHS = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
 
 // Stage geometry — designed against 1920×1080
-const W = 1080, H = 1920;
-const CENTER = { x: 540, y: 820 };
+const W = 1080, H = 2100;
+const CENTER = { x: 540, y: 780 };
 
 // ── Background: vertical climate bands (the "year") ───────────────────────
 
@@ -760,8 +760,8 @@ function ClimateBands() {
       {/* Bottom climate strip (the actual thermal bar of the year) */}
       <div style={{
         position: 'absolute',
-        left: 0, top: H - 50,
-        width: W, height: 50,
+        left: 0, top: H - 70,
+        width: W, height: 70,
         display: 'flex',
         opacity: fadeOut,
       }}>
@@ -783,8 +783,8 @@ function ClimateBands() {
       {/* Month labels */}
       <div style={{
         position: 'absolute',
-        left: 0, top: H - 80,
-        width: W, height: 24,
+        left: 0, top: H - 110,
+        width: W, height: 34,
         display: 'flex',
         opacity: fadeIn * fadeOut,
       }}>
@@ -793,9 +793,10 @@ function ClimateBands() {
             width: W / 12,
             textAlign: 'center',
             fontFamily: 'JetBrains Mono, ui-monospace, monospace',
-            fontSize: 16,
-            color: 'rgba(255,255,255,0.55)',
-            letterSpacing: '0.1em',
+            fontSize: 20,
+            color: 'rgba(255,255,255,0.6)',
+            letterSpacing: '0.04em',
+            textTransform: 'lowercase',
           }}>
             {m}
           </div>
@@ -808,10 +809,10 @@ function ClimateBands() {
 // ── Climate signal curves (organic, atmospheric) ──────────────────────────
 
 const CURVES = [
-  { color: '#43A047', opacity: 0.85, w: 2.2, baseY: 580,  amp: 55,  freq: 1.0, phase: 0.0, label: '🌡️ TEMPERATURA',  at: 3.3 },
-  { color: '#42A5F5', opacity: 0.55, w: 1.4, baseY: 440,  amp: 70,  freq: 1.4, phase: 1.3, label: '⛅ PLUVIOSIDADE', at: 4.2 },
-  { color: '#FB8C00', opacity: 0.50, w: 1.4, baseY: 750,  amp: 50,  freq: 1.2, phase: 2.4, label: '☀️ RADIAÇÃO',     at: 5.1 },
-  { color: '#FDD835', opacity: 0.45, w: 1.2, baseY: 660,  amp: 35,  freq: 0.8, phase: 0.7, label: '💧 UMIDADE',      at: 6.0 },
+  { color: '#43A047', opacity: 0.85, w: 2.2, baseY: 580,  amp: 55,  freq: 1.0, phase: 0.0, label: '🌡️ TEMPERATURA',  at: 5.5 },
+  { color: '#42A5F5', opacity: 0.55, w: 1.4, baseY: 440,  amp: 70,  freq: 1.4, phase: 1.3, label: '⛅ PLUVIOSIDADE', at: 7.0 },
+  { color: '#FB8C00', opacity: 0.50, w: 1.4, baseY: 750,  amp: 50,  freq: 1.2, phase: 2.4, label: '☀️ RADIAÇÃO',     at: 8.5 },
+  { color: '#FDD835', opacity: 0.45, w: 1.2, baseY: 660,  amp: 35,  freq: 0.8, phase: 0.7, label: '💧 UMIDADE',      at: 10.0 },
 ];
 
 function ClimateCurves() {
@@ -863,19 +864,19 @@ function CurvePath({ c, t }) {
 
 const DOTS = [
   // Ponto "agora" — centro, destaque
-  { x: 540, y: 480,  r: 14,  color: '#ffffff', label: '📍 agora · 22 abr',    sub: 'consolidação',           at: 6.6, kind: 'now', isNow: true },
+  { x: 540, y: 480,  r: 14,  color: '#ffffff', label: '📍 agora · 22 abr',    sub: 'consolidação',           at: 11.0, kind: 'now', isNow: true },
   // Fenológicos — arco orgânico pela tela
-  { x: 200, y: 620,  r: 10,  color: '#43A047', label: '🌱 brotação',          sub: 'set · folhas novas',     at: 7.2, kind: 'fen' },
-  { x: 820, y: 700,  r: 10,  color: '#66bb6a', label: '🌳 crescimento',       sub: 'out–nov · vigor',        at: 7.4, kind: 'fen' },
-  { x: 160, y: 840,  r: 9,   color: '#FDD835', label: '☀️ pico de calor',     sub: 'jan · estresse',         at: 7.7, kind: 'fen' },
-  { x: 860, y: 960,  r: 9,   color: '#42A5F5', label: '🌧️ chuvas',           sub: 'fev · risco fúngico',    at: 7.9, kind: 'fen' },
-  { x: 240, y: 1080, r: 10,  color: '#FB8C00', label: '🍂 desaceleração',     sub: 'mai · senescência',      at: 8.2, kind: 'fen' },
+  { x: 200, y: 620,  r: 10,  color: '#43A047', label: '🌱 brotação',          sub: 'set · folhas novas',     at: 12.0, kind: 'fen' },
+  { x: 820, y: 700,  r: 10,  color: '#66bb6a', label: '🌳 crescimento',       sub: 'out–nov · vigor',        at: 12.5, kind: 'fen' },
+  { x: 160, y: 840,  r: 9,   color: '#FDD835', label: '☀️ pico de calor',     sub: 'jan · estresse',         at: 13.0, kind: 'fen' },
+  { x: 860, y: 960,  r: 9,   color: '#42A5F5', label: '🌧️ chuvas',           sub: 'fev · risco fúngico',    at: 13.0, kind: 'fen' },
+  { x: 240, y: 1080, r: 10,  color: '#FB8C00', label: '🍂 desaceleração',     sub: 'mai · senescência',      at: 13.5, kind: 'fen' },
   // Operacionais — faixa central-baixa
-  { x: 180, y: 1260, r: 10,  color: '#26C6DA', label: '🔄 fim da estação',    sub: 'em 57 dias',             at: 8.6, kind: 'cal' },
-  { x: 760, y: 1340, r: 10,  color: '#26C6DA', label: '💤 mínimo',            sub: 'em 81 dias',             at: 8.9, kind: 'cal' },
-  { x: 300, y: 1450, r: 10,  color: '#26C6DA', label: '🌱 início cultivo',    sub: 'em 105 dias',            at: 9.1, kind: 'cal' },
-  { x: 820, y: 1540, r: 11,  color: '#00ACC1', label: '🧪 adubação',          sub: 'gatilho automático',     at: 9.4, kind: 'cal' },
-  { x: 400, y: 1640, r: 10,  color: '#26C6DA', label: '🌸 ápice',             sub: 'em 265 dias',            at: 9.6, kind: 'cal' },
+  { x: 180, y: 1260, r: 10,  color: '#26C6DA', label: '🔄 fim da estação',    sub: 'em 57 dias',             at: 14.5, kind: 'cal' },
+  { x: 760, y: 1340, r: 10,  color: '#26C6DA', label: '💤 mínimo',            sub: 'em 81 dias',             at: 15.0, kind: 'cal' },
+  { x: 300, y: 1450, r: 10,  color: '#26C6DA', label: '🌱 início cultivo',    sub: 'em 105 dias',            at: 15.0, kind: 'cal' },
+  { x: 820, y: 1540, r: 11,  color: '#00ACC1', label: '🧪 adubação',          sub: 'gatilho automático',     at: 15.5, kind: 'cal' },
+  { x: 400, y: 1640, r: 10,  color: '#26C6DA', label: '🌸 ápice',             sub: 'em 265 dias',            at: 16.0, kind: 'cal' },
 ];
 
 function Constellation() {
@@ -973,7 +974,7 @@ function Dot({ d, t }) {
         lineHeight: 1.15,
       }}>
         <div style={{
-          fontSize: 22,
+          fontSize: 28,
           fontWeight: 600,
           color: d.isNow ? '#ffffff' : (isMkt ? '#7fdfe8' : 'rgba(255,255,255,0.92)'),
           letterSpacing: '-0.005em',
@@ -982,10 +983,10 @@ function Dot({ d, t }) {
         {d.sub && (
           <div style={{
             fontFamily: 'JetBrains Mono, ui-monospace, monospace',
-            fontSize: 16,
-            color: isMkt ? 'rgba(127,223,232,0.75)' : 'rgba(255,255,255,0.55)',
-            letterSpacing: '0.06em',
-            marginTop: 4,
+            fontSize: 20,
+            color: isMkt ? 'rgba(127,223,232,0.75)' : 'rgba(255,255,255,0.6)',
+            letterSpacing: '0.04em',
+            marginTop: 6,
             textTransform: 'uppercase',
           }}>{d.sub}</div>
         )}
@@ -1076,13 +1077,13 @@ function HUD() {
   const t = useTime();
   const phases = [
     { at: 0.0,  text: 'CALENDÁRIO DE CULTIVO' },
-    { at: 0.6,  text: '01 · localizando cliente' },
-    { at: 3.0,  text: '02 · sinais climáticos' },
-    { at: 6.6, text: '03 · marcos do ano' },
-    { at: 9.6, text: '04 · 48 semanas · barra térmica' },
-    { at: 13.2, text: '05 · cenário · fenologia' },
-    { at: 18.0, text: '06 · evento da semana · Google Agenda' },
-    { at: 25.2, text: '07 · entregue toda segunda' },
+    { at: 1.0,  text: '01 · localizando cliente' },
+    { at: 5.0,  text: '02 · sinais climáticos' },
+    { at: 11.0, text: '03 · marcos do ano' },
+    { at: 16.0, text: '04 · 48 semanas · barra térmica' },
+    { at: 22.0, text: '05 · cenário · fenologia' },
+    { at: 30.0, text: '06 · evento da semana · Google Agenda' },
+    { at: 42.0, text: '07 · entregue toda segunda' },
   ];
   let active = phases[0];
   for (const p of phases) if (t >= p.at) active = p;
@@ -1094,10 +1095,10 @@ function HUD() {
       {/* Top center: brand */}
       <div style={{
         position: 'absolute',
-        left: 0, right: 0, top: 50,
+        left: 0, right: 0, top: 60,
         textAlign: 'center',
         fontFamily: 'Arial, sans-serif',
-        fontSize: 18,
+        fontSize: 24,
         color: 'rgba(255,255,255,0.32)',
         letterSpacing: '0.28em',
         fontWeight: 500,
@@ -1107,10 +1108,10 @@ function HUD() {
       </div>
       <div style={{
         position: 'absolute',
-        left: 0, right: 0, top: 76,
+        left: 0, right: 0, top: 94,
         textAlign: 'center',
         fontFamily: 'Arial, sans-serif',
-        fontSize: 16,
+        fontSize: 20,
         color: 'rgba(67,160,71,0.55)',
         letterSpacing: '0.16em',
         opacity: fadeOut,
@@ -1120,10 +1121,11 @@ function HUD() {
 
       {/* Top-left meta */}
       <div style={{
-        position: 'absolute', left: 0, right: 0, top: 108,
+        position: 'absolute', left: 0, right: 0, top: 130,
         textAlign: 'center',
         fontFamily: 'JetBrains Mono, ui-monospace, monospace',
-        fontSize: 18,
+        fontSize: 22,
+        textTransform: 'none',
         color: 'rgba(255,255,255,0.5)',
         letterSpacing: '0.14em',
         opacity: fadeOut,
@@ -1131,10 +1133,10 @@ function HUD() {
         v194 · t={t.toFixed(2)}s
       </div>
       <div style={{
-        position: 'absolute', left: 0, right: 0, top: 138,
+        position: 'absolute', left: 0, right: 0, top: 165,
         textAlign: 'center',
         fontFamily: 'JetBrains Mono, ui-monospace, monospace',
-        fontSize: 24,
+        fontSize: 30,
         color: '#43A047',
         letterSpacing: '0.08em',
         fontWeight: 500,
@@ -1158,10 +1160,10 @@ function ClientMeta() {
 
   return (
     <div style={{
-      position: 'absolute', left: 0, right: 0, top: 185,
+      position: 'absolute', left: 0, right: 0, top: 220,
       textAlign: 'center',
       fontFamily: 'JetBrains Mono, ui-monospace, monospace',
-      fontSize: 18,
+      fontSize: 22,
       color: 'rgba(255,255,255,0.85)',
       opacity: appear * fadeOut,
       transform: `translateY(${(1 - appear) * 6}px)`,
@@ -1202,7 +1204,7 @@ function PhenologyLayer() {
   return (
     <div style={{
       position: 'absolute',
-      left: 80, top: 1700,
+      left: 80, top: 1820,
       right: 80,
       opacity,
     }}>
@@ -1298,10 +1300,10 @@ function EventCard() {
         // Active (weeks=0) sits centered and largest
         const w = win.weeks;
         const isActive = w === 0;
-        const cardW = 820;
-        const cardH = 740;
+        const cardW = 860;
+        const cardH = 800;
         const cx = (W - cardW) / 2;
-        const cy = 1080;
+        const cy = 1150;
 
         // Offset/rotation per stack position
         const offsetX = w * 70;       // 0, ±70, ±140, ±210
@@ -1377,7 +1379,7 @@ function PreviewCardBody({ win }) {
           marginBottom: 8,
         }}>{win.tag}</div>
         <div style={{
-          fontSize: 30, fontWeight: 600,
+          fontSize: 36, fontWeight: 600,
           color: 'rgba(255,255,255,0.85)',
           letterSpacing: '-0.01em',
         }}>{win.dateLabel}</div>
@@ -1452,10 +1454,11 @@ function CardHeader({ at, win }) {
     <div style={{ marginBottom: 16 }}>
       <div style={{
         fontFamily: 'JetBrains Mono, ui-monospace, monospace',
-        fontSize: 18,
+        fontSize: 22,
         color: 'rgba(255,255,255,0.5)',
-        letterSpacing: '0.1em',
-        marginBottom: 12,
+        letterSpacing: '0.04em',
+        marginBottom: 14,
+        textTransform: 'lowercase',
       }}>
         {win ? win.tag : '🟢 SEMANA · TEMPERATURAS AMENAS'}
       </div>
@@ -1473,7 +1476,7 @@ function CardHeader({ at, win }) {
 function ClimateLine() {
   return (
     <div style={sec()}>
-      <div style={{ fontSize: 20, color: '#f7f5f0', lineHeight: 1.7 }}>
+      <div style={{ fontSize: 26, color: '#f7f5f0', lineHeight: 1.7 }}>
         🌡️ Mín: <strong>15.5°C</strong> · Média: <strong>19.1°C</strong> · Máx: <strong>23°C</strong><br/>
         ⛅ Chuva — 14% de chance de chuva nos próximos 3 dias.
       </div>
@@ -1554,7 +1557,7 @@ function Markers() {
           alignItems: 'center',
           gap: 10,
           padding: '4px 0',
-          fontSize: 19,
+          fontSize: 24,
           fontFamily: 'JetBrains Mono, ui-monospace, monospace',
           color: '#f7f5f0',
         }}>
@@ -1582,10 +1585,11 @@ function sec() {
 function secTitle() {
   return {
     fontFamily: 'JetBrains Mono, ui-monospace, monospace',
-    fontSize: 16,
-    letterSpacing: '0.1em',
+    fontSize: 20,
+    letterSpacing: '0.04em',
     color: '#43A047',
-    marginBottom: 12,
+    marginBottom: 14,
+    textTransform: 'none',
   };
 }
 
@@ -1623,10 +1627,10 @@ function Tally() {
     }}>
       <div style={{
         color: 'rgba(255,255,255,0.4)',
-        letterSpacing: '0.14em',
+        letterSpacing: '0.04em',
         marginBottom: 8,
       }}>
-        ACUMULANDO
+        acumulando
       </div>
       {rows.map(([k, v]) => (
         <div key={k} style={{
@@ -1678,16 +1682,16 @@ function CTAOverlay() {
 function CTAText({ local }) {
   const lines = [
     { text: 'Sua planta,',     color: '#f7f5f0', weight: 300, at: 0.0 },
-    { text: 'seu clima,',      color: '#f7f5f0', weight: 300, at: 0.2 },
-    { text: 'seu calendário.', color: '#FDD835', weight: 700, at: 0.5 },
+    { text: 'seu clima,',      color: '#f7f5f0', weight: 300, at: 0.5 },
+    { text: 'seu calendário.', color: '#FDD835', weight: 700, at: 1.0 },
   ];
   return (
     <div style={{
       position: 'absolute',
-      left: 0, right: 0, top: 300,
+      left: 0, right: 0, top: 240,
       textAlign: 'center',
       fontFamily: 'Arial, sans-serif',
-      fontSize: 90, lineHeight: 1.1,
+      fontSize: 110, lineHeight: 1.1,
       letterSpacing: '-0.04em',
     }}>
       {lines.map((l, i) => {
@@ -1706,22 +1710,22 @@ function CTAText({ local }) {
       {local > 2.0 && (
         <div style={{
           position: 'absolute',
-          left: 0, right: 0, top: 700,
+          left: 0, right: 0, top: 580,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: 60,
+          gap: 80,
           opacity: clamp((local - 2.0) / 0.6, 0, 1),
         }}>
           <div style={{
             fontFamily: 'JetBrains Mono, ui-monospace, monospace',
             color: '#9bbfa0', fontSize: 14, letterSpacing: '0.1em',
           }}>
-            A PARTIR DE
+            a partir de
             <div style={{
               marginTop: 8, color: '#f7f5f0',
-              fontSize: 72, fontFamily: 'Arial, sans-serif',
-              fontWeight: 300, letterSpacing: '-0.02em', textAlign: 'center',
+              fontSize: 110, fontFamily: 'Arial, sans-serif',
+              fontWeight: 700, letterSpacing: '-0.03em', textAlign: 'center',
             }}>
               R$ 19,90<span style={{ fontSize: 22, color: '#9bbfa0', marginLeft: 8 }}>/ mês</span>
             </div>
@@ -1734,11 +1738,11 @@ function CTAText({ local }) {
               fontSize: 13, color: '#9bbfa0',
               letterSpacing: '0.12em', marginBottom: 8,
             }}>
-              📅 ASSINE EM
+              assine em
             </div>
             <div style={{
-              fontSize: 26, color: '#f7f5f0',
-              borderBottom: '2px solid #FDD835',
+              fontSize: 40, color: '#f7f5f0',
+              borderBottom: '3px solid #FDD835',
               paddingBottom: 4, display: 'inline-block',
             }}>
               cultivoornamental.com.br
@@ -1777,8 +1781,8 @@ function App() {
     <div id="video-root" data-screen-label="t=0s" style={{ position: 'absolute', inset: 0 }}>
       <Stage
         width={1080}
-        height={1920}
-        duration={30}
+        height={2100}
+        duration={50}
         background="#0d1a0d"
         persistKey="cultivo-mobile"
         loop={true}
