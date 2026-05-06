@@ -375,7 +375,8 @@
 //  ⚙️  CONFIGURAÇÃO — altere aqui
 // ═══════════════════════════════════════════
 const CLIENT_ID    = '69400473743-3jmukqs6ubott7kf03n3cg5k3j5b8jv4.apps.googleusercontent.com';
-const CALENDAR_ID  = 'calendario.cultivoornamental@gmail.com';
+const CALENDAR_ID  = 'primary';
+const OWNER_EMAIL  = 'calendario.cultivoornamental@gmail.com';
 const SCOPES       = 'https://www.googleapis.com/auth/calendar.events';
 const TZ           = 'America/Sao_Paulo';
 
@@ -570,12 +571,20 @@ async function confirmar() {
     summary: `${assunto || 'Agendamento'} — ${nome}`,
     description: `Nome: ${nome}\nContato: ${contato || '—'}\nAssunto: ${assunto || '—'}`,
     start: { dateTime: startISO, timeZone: TZ },
-    end:   { dateTime: endISO,   timeZone: TZ }
+    end:   { dateTime: endISO,   timeZone: TZ },
+    attendees: [{ email: CALENDAR_ID }],
+    reminders: {
+      useDefault: false,
+      overrides: [
+        { method: 'email', minutes: 60 },
+        { method: 'popup', minutes: 30 }
+      ]
+    }
   };
 
   const msg = document.getElementById('statusMsg');
   try {
-    const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events`;
+    const url = 'https://www.googleapis.com/calendar/v3/calendars/primary/events?sendUpdates=all';
     await gapi('POST', url, body);
     msg.textContent = '✓ Agendamento salvo no Google Calendar!';
     msg.className   = 'status-msg success';
