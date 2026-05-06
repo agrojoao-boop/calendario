@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agendamento — Cultivo Ornamental</title>
+
+  <!--
+  ╔══════════════════════════════════════════════════════════════════╗
+  ║  CONFIGURAÇÃO NECESSÁRIA — leia antes de publicar              ║
+  ║                                                                  ║
+  ║  1. Crie um projeto em https://console.cloud.google.com         ║
+  ║  2. Ative a "Google Calendar API"                               ║
+  ║  3. Crie credenciais → OAuth 2.0 → Aplicativo da Web           ║
+  ║  4. Adicione seu domínio em "Origens autorizadas"               ║
+  ║  5. Copie o CLIENT_ID gerado e cole abaixo                      ║
+  ║  6. Ajuste CALENDAR_ID se necessário                            ║
+  ╚══════════════════════════════════════════════════════════════════╝
+  -->
+
+  <style>
+    :root {
+      --blue: #185FA5;
+      --blue-light: #E6F1FB;
+      --blue-mid: #B5D4F4;
+      --green: #1D9E75;
+      --green-light: #EAF3DE;
+      --green-dark: #3B6D11;
+      --red-light: #FCEBEB;
+      --red-dark: #791F1F;
+      --red-border: #A32D2D;
+      --text: #1a1a1a;
+      --text-muted: #666;
+      --text-faint: #999;
+      --border: rgba(0,0,0,0.12);
+      --border-hover: rgba(0,0,0,0.25);
+      --bg: #ffffff;
+      --bg-secondary: #f7f7f5;
+      --radius: 8px;
+      --radius-lg: 12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg-secondary);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      background: var(--bg);
+      border-radius: var(--radius-lg);
+      border: 0.5px solid var(--border);
+      padding: 2rem;
+      width: 100%;
+      max-width: 560px;
+    }
+
+    /* Header */
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 0.5px solid var(--border);
+    }
+    .brand-icon {
+      width: 36px; height: 36px;
+      background: var(--green-light);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .brand-name { font-size: 15px; font-weight: 600; color: var(--text); }
+    .brand-sub { font-size: 12px; color: var(--text-muted); }
+
+    /* Auth */
+    #authSection {
+      text-align: center;
+      padding: 2rem 0;
+    }
+    #authSection p {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+    }
+    .google-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 20px;
+      border: 0.5px solid var(--border-hover);
+      border-radius: var(--radius);
+      background: var(--bg);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      color: var(--text);
+      transition: background .15s;
+    }
+    .google-btn:hover { background: var(--bg-secondary); }
+    .google-btn svg { width: 18px; height: 18px; }
+
+    /* Calendar */
+    #calSection { display: none; }
+
+    .cal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+    }
+    .cal-title { font-size: 17px; font-weight: 500; }
+    .nav-btn {
+      background: none;
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      width: 34px; height: 34px;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .15s;
+      color: var(--text);
+    }
+    .nav-btn:hover { background: var(--bg-secondary); }
+
+    .weekdays {
+      display: grid;
+      grid-template-columns: repeat(7,1fr);
+      gap: 3px;
+      margin-bottom: 3px;
+    }
+    .weekday {
+      text-align: center;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      padding: 4px 0;
+    }
+
+    .days-grid {
+      display: grid;
+      grid-template-columns: repeat(7,1fr);
+      gap: 3px;
+      margin-bottom: 1.25rem;
+    }
+    .day-cell {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius);
+      font-size: 13px;
+      cursor: pointer;
+      border: 0.5px solid transparent;
+      transition: all .15s;
+      position: relative;
+    }
+    .day-cell:hover:not(.empty):not(.past) {
+      background: var(--bg-secondary);
+      border-color: var(--border);
+    }
+    .day-cell.empty, .day-cell.past { cursor: default; color: var(--text-faint); }
+    .day-cell.today { border-color: var(--blue); color: var(--blue); font-weight: 600; }
+    .day-cell.selected { background: var(--blue); color: #fff; border-color: var(--blue); font-weight: 600; }
+    .day-cell.has-event::after {
+      content: '';
+      position: absolute;
+      bottom: 3px; left: 50%;
+      transform: translateX(-50%);
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      background: var(--green);
+    }
+    .day-cell.selected.has-event::after { background: rgba(255,255,255,0.7); }
+
+    /* Time slots */
+    #timeSection { display: none; margin-bottom: 1.25rem; }
+    .section-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .time-slots {
+      display: grid;
+      grid-template-columns: repeat(4,1fr);
+      gap: 6px;
+    }
+    .time-btn {
+      padding: 8px 4px;
+      text-align: center;
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 13px;
+      cursor: pointer;
+      background: var(--bg);
+      color: var(--text);
+      transition: all .15s;
+    }
+    .time-btn:hover:not(.booked) { background: var(--bg-secondary); border-color: var(--border-hover); }
+    .time-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .time-btn.booked { color: var(--text-faint); background: var(--bg-secondary); cursor: not-allowed; text-decoration: line-through; font-size: 12px; }
+
+    /* Form */
+    #formSection { display: none; }
+    .form-row { margin-bottom: 10px; }
+    .form-label { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; display: block; }
+    .form-input {
+      width: 100%;
+      padding: 9px 12px;
+      border: 0.5px solid var(--border-hover);
+      border-radius: var(--radius);
+      font-size: 14px;
+      color: var(--text);
+      background: var(--bg);
+      outline: none;
+      transition: box-shadow .15s;
+    }
+    .form-input:focus { box-shadow: 0 0 0 2px var(--blue-mid); }
+
+    .confirm-btn {
+      width: 100%;
+      padding: 11px;
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      margin-top: 4px;
+      transition: opacity .15s;
+    }
+    .confirm-btn:hover { opacity: .88; }
+    .confirm-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    .status-msg {
+      display: none;
+      padding: 10px 14px;
+      font-size: 13px;
+      border-radius: var(--radius);
+      margin-top: 10px;
+      border: 0.5px solid;
+    }
+    .status-msg.success { display: block; background: var(--green-light); border-color: #639922; color: var(--green-dark); }
+    .status-msg.error   { display: block; background: var(--red-light);   border-color: var(--red-border); color: var(--red-dark); }
+
+    /* Events list */
+    .events-section { margin-top: 1.5rem; border-top: 0.5px solid var(--border); padding-top: 1.25rem; display: none; }
+    .events-section.visible { display: block; }
+    .ev-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 7px;
+    }
+    .ev-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex-shrink: 0; margin-top: 5px; }
+    .ev-name { font-size: 13px; font-weight: 500; }
+    .ev-detail { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+    /* Loading */
+    .loading { font-size: 13px; color: var(--text-muted); text-align: center; padding: 1rem 0; }
+
+    /* Badge */
+    .sync-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: var(--text-muted);
+      padding: 3px 10px;
+      border: 0.5px solid var(--border);
+      border-radius: 20px;
+      background: var(--bg-secondary);
+      margin-bottom: 1.25rem;
+    }
+    .sync-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+
+    @media (max-width: 480px) {
+      body { padding: 0; align-items: stretch; }
+      .container { border-radius: 0; border: none; padding: 1.25rem; min-height: 100vh; }
+      .time-slots { grid-template-columns: repeat(3,1fr); }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Marca -->
+  <div class="brand">
+    <div class="brand-icon">🌿</div>
+    <div>
+      <div class="brand-name">boncultivo.com</div>
+      <div class="brand-sub">Sistema de Agendamento</div>
+    </div>
+  </div>
+
+  <!-- Autenticação -->
+  <div id="authSection">
+    <p>Faça login com o Google para agendar um horário.</p>
+    <button class="google-btn" onclick="handleAuthClick()">
+      <svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="m6.306 14.691 6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg>
+      Entrar com Google
+    </button>
+  </div>
+
+  <!-- Calendário -->
+  <div id="calSection">
+    <div class="sync-badge">
+      <span class="sync-dot"></span>
+      Sincronizado com Google Calendar
+    </div>
+
+    <div class="cal-header">
+      <button class="nav-btn" onclick="changeMonth(-1)" aria-label="Mês anterior">&#8249;</button>
+      <span class="cal-title" id="monthTitle"></span>
+      <button class="nav-btn" onclick="changeMonth(1)" aria-label="Próximo mês">&#8250;</button>
+    </div>
+
+    <div class="weekdays">
+      <div class="weekday">Dom</div>
+      <div class="weekday">Seg</div>
+      <div class="weekday">Ter</div>
+      <div class="weekday">Qua</div>
+      <div class="weekday">Qui</div>
+      <div class="weekday">Sex</div>
+      <div class="weekday">Sáb</div>
+    </div>
+    <div class="days-grid" id="daysGrid"></div>
+
+    <div id="timeSection">
+      <div class="section-label" id="dateLabel"></div>
+      <div id="loadingSlots" class="loading" style="display:none">Carregando horários...</div>
+      <div class="time-slots" id="timeSlots"></div>
+    </div>
+
+    <div id="formSection">
+      <div class="section-label" style="margin-bottom:10px">Seus dados</div>
+      <div class="form-row"><label class="form-label">Nome completo *</label><input class="form-input" type="text" id="inputNome" placeholder="Seu nome completo" /></div>
+      <div class="form-row"><label class="form-label">E-mail ou telefone</label><input class="form-input" type="text" id="inputContato" placeholder="email@... ou (xx) 99999-9999" /></div>
+      <div class="form-row"><label class="form-label">Assunto</label><input class="form-input" type="text" id="inputAssunto" placeholder="Ex: Consulta, Reunião, Visita..." /></div>
+      <button class="confirm-btn" id="confirmBtn" onclick="confirmar()">Confirmar agendamento</button>
+      <div class="status-msg" id="statusMsg"></div>
+    </div>
+
+    <div class="events-section" id="evSection">
+      <div class="section-label">Agendamentos do mês</div>
+      <div id="evList"></div>
+    </div>
+  </div>
+
+</div>
+
+<!--
+  ════════════════════════════════════════════════════
+  Google Identity Services + Calendar API
+  ════════════════════════════════════════════════════
+-->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+// ═══════════════════════════════════════════
+//  ⚙️  CONFIGURAÇÃO — altere aqui
+// ═══════════════════════════════════════════
+const CLIENT_ID    = '69400473743-3jmukqs6ubott7kf03n3cg5k3j5b8jv4.apps.googleusercontent.com';
+const CALENDAR_ID  = 'calendario.cultivoornamental@gmail.com';
+const SCOPES       = 'https://www.googleapis.com/auth/calendar.events';
+const TZ           = 'America/Sao_Paulo';
+
+// Horários disponíveis para agendamento
+const TIMES = [
+  '06:00','07:00','08:00','09:00','10:00','11:00',
+  '12:00','13:00','14:00','15:00','16:00','17:00',
+  '18:00','19:00','20:00','21:00','22:00'
+];
+
+const MONTHS = [
+  'Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+  'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'
+];
+// ════════════════════════════════════════════
+
+let accessToken = null;
+let curYear  = new Date().getFullYear();
+let curMonth = new Date().getMonth();
+let selDay   = null;
+let selTime  = null;
+let gcalEvents = [];
+
+// ── Auth ──────────────────────────────────
+function handleAuthClick() {
+  const client = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: SCOPES,
+    callback: (resp) => {
+      if (resp.error) { alert('Erro ao autenticar: ' + resp.error); return; }
+      accessToken = resp.access_token;
+      document.getElementById('authSection').style.display = 'none';
+      document.getElementById('calSection').style.display  = 'block';
+      renderCal();
+      loadEvents();
+    }
+  });
+  client.requestAccessToken();
+}
+
+// ── API helpers ───────────────────────────
+async function gapi(method, url, body) {
+  const opts = {
+    method,
+    headers: {
+      'Authorization': 'Bearer ' + accessToken,
+      'Content-Type': 'application/json'
+    }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(url, opts);
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+async function loadEvents() {
+  const pad = n => String(n).padStart(2,'0');
+  const lastDay = new Date(curYear, curMonth+1, 0).getDate();
+  const tMin = `${curYear}-${pad(curMonth+1)}-01T00:00:00`;
+  const tMax = `${curYear}-${pad(curMonth+1)}-${lastDay}T23:59:59`;
+  const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events`
+    + `?timeMin=${tMin}-03:00&timeMax=${tMax}-03:00&singleEvents=true&orderBy=startTime&timeZone=${TZ}&maxResults=200`;
+  try {
+    const data = await gapi('GET', url);
+    gcalEvents = (data.items || []).map(ev => {
+      const start = ev.start.dateTime || ev.start.date;
+      const d = new Date(start);
+      return {
+        id: ev.id,
+        title: ev.summary || 'Agendamento',
+        date: `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`,
+        time: ev.start.dateTime ? `${pad(d.getHours())}:${pad(d.getMinutes())}` : null,
+        description: ev.description || ''
+      };
+    });
+  } catch(e) {
+    gcalEvents = [];
+  }
+  renderCal();
+  renderEvSection();
+}
+
+// ── Calendar render ───────────────────────
+function changeMonth(d) {
+  curMonth += d;
+  if (curMonth > 11) { curMonth = 0; curYear++; }
+  if (curMonth < 0)  { curMonth = 11; curYear--; }
+  selDay = null; selTime = null;
+  document.getElementById('timeSection').style.display = 'none';
+  document.getElementById('formSection').style.display = 'none';
+  gcalEvents = [];
+  renderCal();
+  if (accessToken) loadEvents();
+}
+
+function pad(n) { return String(n).padStart(2,'0'); }
+
+function bookedTimesForDay(d) {
+  const dateStr = `${curYear}-${pad(curMonth+1)}-${pad(d)}`;
+  return gcalEvents.filter(e => e.date === dateStr).map(e => e.time).filter(Boolean);
+}
+
+function daysWithEvents() {
+  return new Set(gcalEvents.map(e => parseInt(e.date.split('-')[2])));
+}
+
+function renderCal() {
+  document.getElementById('monthTitle').textContent = MONTHS[curMonth] + ' ' + curYear;
+  const grid  = document.getElementById('daysGrid');
+  grid.innerHTML = '';
+  const first = new Date(curYear, curMonth, 1).getDay();
+  const days  = new Date(curYear, curMonth+1, 0).getDate();
+  const today = new Date();
+  const evDays = daysWithEvents();
+
+  for (let i = 0; i < first; i++) {
+    const e = document.createElement('div');
+    e.className = 'day-cell empty';
+    grid.appendChild(e);
+  }
+  for (let d = 1; d <= days; d++) {
+    const e = document.createElement('div');
+    const thisDate = new Date(curYear, curMonth, d);
+    const isPast   = thisDate < new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const isToday  = d === today.getDate() && curMonth === today.getMonth() && curYear === today.getFullYear();
+    const hasEv    = evDays.has(d);
+    e.className = 'day-cell'
+      + (isPast   ? ' past'      : '')
+      + (isToday  ? ' today'     : '')
+      + (hasEv    ? ' has-event' : '')
+      + (selDay === d ? ' selected' : '');
+    e.textContent = d;
+    if (!isPast) e.onclick = () => selectDay(d);
+    grid.appendChild(e);
+  }
+}
+
+function selectDay(d) {
+  selDay = d; selTime = null;
+  document.getElementById('formSection').style.display = 'none';
+  document.getElementById('statusMsg').className = 'status-msg';
+  renderCal();
+  document.getElementById('dateLabel').textContent =
+    `Horários disponíveis — ${d} de ${MONTHS[curMonth]} de ${curYear}`;
+  document.getElementById('timeSection').style.display = 'block';
+  renderTimes();
+}
+
+function renderTimes() {
+  const slots  = document.getElementById('timeSlots');
+  slots.innerHTML = '';
+  const booked = bookedTimesForDay(selDay);
+  TIMES.forEach(t => {
+    const btn = document.createElement('button');
+    const isBk = booked.includes(t);
+    btn.className = 'time-btn' + (isBk ? ' booked' : '') + (selTime === t && !isBk ? ' active' : '');
+    btn.textContent = t;
+    btn.disabled = isBk;
+    if (!isBk) btn.onclick = () => selectTime(t);
+    slots.appendChild(btn);
+  });
+}
+
+function selectTime(t) {
+  selTime = t;
+  renderTimes();
+  document.getElementById('inputNome').value    = '';
+  document.getElementById('inputContato').value = '';
+  document.getElementById('inputAssunto').value = '';
+  document.getElementById('statusMsg').className = 'status-msg';
+  document.getElementById('formSection').style.display = 'block';
+}
+
+// ── Create event ──────────────────────────
+async function confirmar() {
+  const nome    = document.getElementById('inputNome').value.trim();
+  const contato = document.getElementById('inputContato').value.trim();
+  const assunto = document.getElementById('inputAssunto').value.trim();
+  if (!nome) { document.getElementById('inputNome').focus(); return; }
+
+  const btn = document.getElementById('confirmBtn');
+  btn.disabled = true;
+  btn.textContent = 'Salvando...';
+
+  const dateStr  = `${curYear}-${pad(curMonth+1)}-${pad(selDay)}`;
+  const [h, m]   = selTime.split(':');
+  const startISO = `${dateStr}T${h}:${m}:00`;
+  const endH     = String(parseInt(h) + 1).padStart(2,'0');
+  const endISO   = `${dateStr}T${endH}:00:00`;
+
+  const body = {
+    summary: `${assunto || 'Agendamento'} — ${nome}`,
+    description: `Nome: ${nome}\nContato: ${contato || '—'}\nAssunto: ${assunto || '—'}`,
+    start: { dateTime: startISO, timeZone: TZ },
+    end:   { dateTime: endISO,   timeZone: TZ }
+  };
+
+  const msg = document.getElementById('statusMsg');
+  try {
+    const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events`;
+    await gapi('POST', url, body);
+    msg.textContent = '✓ Agendamento salvo no Google Calendar!';
+    msg.className   = 'status-msg success';
+    document.getElementById('formSection').style.display = 'none';
+    selTime = null;
+    await loadEvents();
+    if (selDay) renderTimes();
+  } catch(e) {
+    msg.textContent = 'Erro ao salvar. Verifique sua conexão e tente novamente.';
+    msg.className   = 'status-msg error';
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Confirmar agendamento';
+}
+
+// ── Events list ───────────────────────────
+function renderEvSection() {
+  const section = document.getElementById('evSection');
+  const list    = document.getElementById('evList');
+  if (!gcalEvents.length) { section.classList.remove('visible'); return; }
+  section.classList.add('visible');
+  list.innerHTML = '';
+  [...gcalEvents]
+    .sort((a,b) => a.date.localeCompare(b.date) || (a.time||'').localeCompare(b.time||''))
+    .forEach(ev => {
+      const [y, mo, d] = ev.date.split('-');
+      const div = document.createElement('div');
+      div.className = 'ev-item';
+      div.innerHTML = `
+        <div class="ev-dot"></div>
+        <div>
+          <div class="ev-name">${ev.title}</div>
+          <div class="ev-detail">${parseInt(d)}/${parseInt(mo)}/${y}${ev.time ? ' às ' + ev.time : ''}</div>
+        </div>`;
+      list.appendChild(div);
+    });
+}
+</script>
+
+</body>
+</html>
