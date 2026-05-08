@@ -20,30 +20,30 @@
 
   <style>
     :root {
-      --blue: #185FA5;
-      --blue-light: #E6F1FB;
-      --blue-mid: #B5D4F4;
+      --blue: #111;
+      --blue-light: #f0f0f0;
+      --blue-mid: #ccc;
       --green: #1D9E75;
-      --green-light: #EAF3DE;
-      --green-dark: #3B6D11;
-      --red-light: #FCEBEB;
-      --red-dark: #791F1F;
-      --red-border: #A32D2D;
-      --text: #1a1a1a;
-      --text-muted: #666;
-      --text-faint: #999;
-      --border: rgba(0,0,0,0.12);
-      --border-hover: rgba(0,0,0,0.25);
+      --green-light: #edfaf4;
+      --green-dark: #1a7a56;
+      --red-light: #fff5f5;
+      --red-dark: #c0392b;
+      --red-border: #f5c0c0;
+      --text: #111;
+      --text-muted: #888;
+      --text-faint: #bbb;
+      --border: #e0e0e0;
+      --border-hover: #999;
       --bg: #ffffff;
-      --bg-secondary: #f7f7f5;
-      --radius: 8px;
-      --radius-lg: 12px;
+      --bg-secondary: #fafafa;
+      --radius: 0px;
+      --radius-lg: 0px;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-family: 'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
       background: var(--bg-secondary);
       color: var(--text);
       min-height: 100vh;
@@ -56,7 +56,7 @@
     .container {
       background: var(--bg);
       border-radius: var(--radius-lg);
-      border: 0.5px solid var(--border);
+      border: 1px solid #222;
       padding: 2rem;
       width: 100%;
       max-width: 560px;
@@ -73,8 +73,8 @@
     }
     .brand-icon {
       width: 36px; height: 36px;
-      background: var(--green-light);
-      border-radius: 8px;
+      background: #f0f0f0;
+      border-radius: 0;
       display: flex; align-items: center; justify-content: center;
       font-size: 18px;
     }
@@ -96,11 +96,11 @@
       align-items: center;
       gap: 10px;
       padding: 10px 20px;
-      border: 0.5px solid var(--border-hover);
-      border-radius: var(--radius);
+      border: 1px solid #222;
+      border-radius: 0;
       background: var(--bg);
-      font-size: 14px;
-      font-weight: 500;
+      font-size: 13.5px;
+      font-weight: 600;
       cursor: pointer;
       color: var(--text);
       transition: background .15s;
@@ -120,8 +120,8 @@
     .cal-title { font-size: 17px; font-weight: 500; }
     .nav-btn {
       background: none;
-      border: 0.5px solid var(--border);
-      border-radius: var(--radius);
+      border: 1px solid #ddd;
+      border-radius: 0;
       width: 34px; height: 34px;
       cursor: pointer;
       font-size: 16px;
@@ -156,10 +156,10 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: var(--radius);
+      border-radius: 0;
       font-size: 13px;
       cursor: pointer;
-      border: 0.5px solid transparent;
+      border: 1px solid transparent;
       transition: all .15s;
       position: relative;
     }
@@ -189,7 +189,7 @@
       color: var(--text-muted);
       margin-bottom: 10px;
       text-transform: uppercase;
-      letter-spacing: .04em;
+      letter-spacing: .08em;
     }
     .time-slots {
       display: grid;
@@ -199,8 +199,8 @@
     .time-btn {
       padding: 8px 4px;
       text-align: center;
-      border: 0.5px solid var(--border);
-      border-radius: var(--radius);
+      border: 1px solid #ddd;
+      border-radius: 0;
       font-size: 13px;
       cursor: pointer;
       background: var(--bg);
@@ -214,43 +214,43 @@
     /* Form */
     #formSection { display: none; }
     .form-row { margin-bottom: 10px; }
-    .form-label { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; display: block; }
+    .form-label { font-size: 10px; color: var(--text-muted); margin-bottom: 5px; display: block; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; }
     .form-input {
       width: 100%;
       padding: 9px 12px;
-      border: 0.5px solid var(--border-hover);
-      border-radius: var(--radius);
-      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 0;
+      font-size: 13.5px;
       color: var(--text);
       background: var(--bg);
       outline: none;
-      transition: box-shadow .15s;
+      transition: border-color .15s;
     }
-    .form-input:focus { box-shadow: 0 0 0 2px var(--blue-mid); }
+    .form-input:focus { border-color: #111; box-shadow: none; }
 
     .confirm-btn {
       width: 100%;
       padding: 11px;
-      background: var(--blue);
+      background: #111;
       color: #fff;
       border: none;
-      border-radius: var(--radius);
-      font-size: 14px;
-      font-weight: 500;
+      border-radius: 0;
+      font-size: 13.5px;
+      font-weight: 600;
       cursor: pointer;
       margin-top: 4px;
-      transition: opacity .15s;
+      transition: background .15s;
     }
-    .confirm-btn:hover { opacity: .88; }
+    .confirm-btn:hover { background: #333; }
     .confirm-btn:disabled { opacity: .5; cursor: not-allowed; }
 
     .status-msg {
       display: none;
       padding: 10px 14px;
       font-size: 13px;
-      border-radius: var(--radius);
+      border-radius: 0;
       margin-top: 10px;
-      border: 0.5px solid;
+      border: 1px solid;
     }
     .status-msg.success { display: block; background: var(--green-light); border-color: #639922; color: var(--green-dark); }
     .status-msg.error   { display: block; background: var(--red-light);   border-color: var(--red-border); color: var(--red-dark); }
@@ -263,8 +263,8 @@
       align-items: flex-start;
       gap: 10px;
       padding: 10px 12px;
-      border: 0.5px solid var(--border);
-      border-radius: var(--radius);
+      border: 1px solid #e8e8e8;
+      border-radius: 0;
       margin-bottom: 7px;
     }
     .ev-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex-shrink: 0; margin-top: 5px; }
@@ -282,8 +282,8 @@
       font-size: 11px;
       color: var(--text-muted);
       padding: 3px 10px;
-      border: 0.5px solid var(--border);
-      border-radius: 20px;
+      border: 1px solid #ddd;
+      border-radius: 0;
       background: var(--bg-secondary);
       margin-bottom: 1.25rem;
     }
@@ -291,20 +291,21 @@
 
     @media (max-width: 480px) {
       body { padding: 0; align-items: stretch; }
-      .container { border-radius: 0; border: none; padding: 1.25rem; min-height: 100vh; }
+      .container { border-radius: 0; border-left: none; border-right: none; padding: 1.25rem; min-height: 100vh; }
       .time-slots { grid-template-columns: repeat(3,1fr); }
     }
   </style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
 <div class="container">
 
   <!-- Marca -->
   <div class="brand">
-    <div class="brand-icon">🌿</div>
-    <div>
+<div>
       <div class="brand-name">Calendário</div>
-      <div class="brand-sub">cultivoornamental.com.br</div>
+      <div class="brand-sub">cultivoornamental.com</div>
     </div>
   </div>
 
