@@ -4,11 +4,11 @@
 
 <div style="position:relative; width:500px; height:500px;">
 
-  <video id="player" width="500" height="500" style="object-fit:cover;" controls></video>
+  <video id="player" width="500" height="500" style="object-fit:cover; display:block;" onclick="togglePlay()"></video>
 
-  <button onclick="anterior()" style="position:absolute; left:-30px; top:50%; transform:translateY(-50%); background:none; border:none; color:white; font-size:20px; cursor:pointer; opacity:0.4;">&#9664;</button>
+  <button onclick="anterior()" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); background:none; border:none; color:white; font-size:24px; cursor:pointer; opacity:0.5; z-index:10;">&#9664;</button>
 
-  <button onclick="proximo()" style="position:absolute; right:-30px; top:50%; transform:translateY(-50%); background:none; border:none; color:white; font-size:20px; cursor:pointer; opacity:0.4;">&#9654;</button>
+  <button onclick="proximo()" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; color:white; font-size:24px; cursor:pointer; opacity:0.5; z-index:10;">&#9654;</button>
 
 </div>
 
@@ -28,6 +28,11 @@ const player = document.getElementById("player");
 function carregar(index) {
   player.src = videos[index];
   player.load();
+  player.play();
+}
+
+function togglePlay() {
+  player.paused ? player.play() : player.pause();
 }
 
 function proximo() {
