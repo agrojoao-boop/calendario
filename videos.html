@@ -14,7 +14,7 @@
 </head>
 <body>
 <div class="container">
-  <video id="player" onclick="togglePlay()"></video>
+  <video id="player" autoplay muted loop playsinline onclick="togglePlay()"></video>
   <button class="btn btn-left" onclick="anterior()">&#9664;</button>
   <button class="btn btn-right" onclick="proximo()">&#9654;</button>
 </div>
@@ -29,10 +29,27 @@ const videos = [
 ];
 let current = 0;
 const player = document.getElementById("player");
-function carregar(index) { player.src = videos[index]; player.load(); player.play(); }
-function togglePlay() { player.paused ? player.play() : player.pause(); }
-function proximo() { if (current < videos.length - 1) { current++; carregar(current); } }
-function anterior() { if (current > 0) { current--; carregar(current); } }
+
+function carregar(index) {
+  player.src = videos[index];
+  player.load();
+  player.play();
+}
+
+function togglePlay() {
+  player.paused ? player.play() : player.pause();
+}
+
+function proximo() {
+  current = (current + 1) % videos.length;
+  carregar(current);
+}
+
+function anterior() {
+  current = (current - 1 + videos.length) % videos.length;
+  carregar(current);
+}
+
 player.addEventListener("ended", proximo);
 carregar(0);
 </script>
