@@ -324,6 +324,9 @@
       <span class="sync-dot"></span>
       Sincronizado com Google Calendar
     </div>
+    <div style="font-size:11px;color:#888;margin-bottom:1.25rem;">
+      &#x1F550; Horários em <strong>GMT-3 (Brasília)</strong>
+    </div>
 
     <div class="cal-header">
       <button class="nav-btn" onclick="changeMonth(-1)" aria-label="Mês anterior">&#8249;</button>
@@ -444,13 +447,26 @@ async function loadEvents() {
     const r = await fetch(url);
     const data = await r.json();
     gcalEvents = (data.items || []).map(ev => {
-      const start = ev.start.dateTime || ev.start.date;
-      const d = new Date(start);
+      // Extract date/time directly from ISO string to avoid timezone conversion
+      const startRaw = ev.start.dateTime || ev.start.date;
+      let date, time = null;
+      if (ev.start.dateTime) {
+        // Format: 2026-05-12T09:00:00-03:00 — take local part before offset
+        const local = startRaw.replace('Z','').split('+')[0].split('-').length > 3
+          ? startRaw.substring(0, 16)  // handles -03:00 offset
+          : startRaw.substring(0, 16);
+        // Safer: just split on T
+        const parts = startRaw.split('T');
+        date = parts[0];
+        time = parts[1] ? parts[1].substring(0,5) : null;
+      } else {
+        date = startRaw.substring(0,10);
+      }
       return {
         id: ev.id,
         title: ev.summary || 'Agendamento',
-        date: `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`,
-        time: ev.start.dateTime ? `${pad(d.getHours())}:${pad(d.getMinutes())}` : null,
+        date: date,
+        time: time,
         description: ev.description || ''
       };
     });
@@ -522,7 +538,7 @@ function selectDay(d) {
   document.getElementById('statusMsg').className = 'status-msg';
   renderCal();
   document.getElementById('dateLabel').textContent =
-    `Horários disponíveis — ${d} de ${MONTHS[curMonth]} de ${curYear}`;
+    `Horários disponíveis — ${d} de ${MONTHS[curMonth]} de ${curYear} · GMT-3 (Brasília)`;
   document.getElementById('timeSection').style.display = 'block';
   renderTimes();
 }
@@ -567,7 +583,7 @@ async function confirmar() {
   const [h, m]   = selTime.split(':');
   const startISO = `${dateStr}T${h}:${m}:00`;
   const endH     = String(parseInt(h) + 1).padStart(2,'0');
-  const endISO   = `${dateStr}T${endH}:00:00`;
+  const endISO   = `${dateStr}T${endH}:${m}:00`;
 
   const body = {
     summary: `${assunto || 'Agendamento'} — ${nome}`,
