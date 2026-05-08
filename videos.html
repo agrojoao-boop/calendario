@@ -1,17 +1,23 @@
 <!DOCTYPE html>
 <html>
-<body style="background:black; display:flex; justify-content:center; align-items:center; height:100vh; margin:0;">
-
-<div style="position:relative; width:500px; height:500px;">
-
-  <video id="player" width="500" height="500" style="object-fit:cover; display:block;" onclick="togglePlay()"></video>
-
-  <button onclick="anterior()" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); background:none; border:none; color:white; font-size:24px; cursor:pointer; opacity:0.5; z-index:10;">&#9664;</button>
-
-  <button onclick="proximo()" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; color:white; font-size:24px; cursor:pointer; opacity:0.5; z-index:10;">&#9654;</button>
-
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:black; display:flex; justify-content:center; align-items:center; width:100%; height:100%; overflow:hidden; }
+  .container { position:relative; width:100%; height:100%; }
+  video { width:100%; height:100%; object-fit:cover; display:block; }
+  .btn { position:absolute; top:50%; transform:translateY(-50%); background:none; border:none; color:white; font-size:24px; cursor:pointer; opacity:0.5; z-index:10; }
+  .btn-left { left:10px; }
+  .btn-right { right:10px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <video id="player" onclick="togglePlay()"></video>
+  <button class="btn btn-left" onclick="anterior()">&#9664;</button>
+  <button class="btn btn-right" onclick="proximo()">&#9654;</button>
 </div>
-
 <script>
 const videos = [
   "Gravação de Tela 2025-10-25 125909.mp4",
@@ -21,34 +27,12 @@ const videos = [
   "Gravação de Tela 2025-10-25 172943.mp4",
   "Gravação de Tela 2025-10-25 184028.mp4"
 ];
-
 let current = 0;
 const player = document.getElementById("player");
-
-function carregar(index) {
-  player.src = videos[index];
-  player.load();
-  player.play();
-}
-
-function togglePlay() {
-  player.paused ? player.play() : player.pause();
-}
-
-function proximo() {
-  if (current < videos.length - 1) {
-    current++;
-    carregar(current);
-  }
-}
-
-function anterior() {
-  if (current > 0) {
-    current--;
-    carregar(current);
-  }
-}
-
+function carregar(index) { player.src = videos[index]; player.load(); player.play(); }
+function togglePlay() { player.paused ? player.play() : player.pause(); }
+function proximo() { if (current < videos.length - 1) { current++; carregar(current); } }
+function anterior() { if (current > 0) { current--; carregar(current); } }
 player.addEventListener("ended", proximo);
 carregar(0);
 </script>
