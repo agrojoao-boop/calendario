@@ -139,7 +139,7 @@ const i18n = {
     lnome:        'Nome ou apelido',
     pnome:        'Como quer ser chamado',
     lemail:       'E-mail da conta Google',
-    pemail:       'ex: seunome@gmail.com',
+    pemail:       'Gmail, Outlook, Yahoo, ou outro',
     lloc:         'Localizacao',
     geo:          'Detectar localizacao',
     geoDetecting: 'Detectando...',
@@ -153,7 +153,7 @@ const i18n = {
     btn:          'Submeter informacoes',
     notice:       'Suas informacoes serao enviadas automaticamente ao clicar.',
     errNome:      'Informe seu nome ou apelido.',
-    errEmail:     'Informe o e-mail da sua conta Google (@gmail.com).',
+    errEmail:     'Informe o e-mail da sua conta Google.',
     errCidade:    'Informe sua cidade.',
     errPais:      'Informe o pais.',
     errSend:      'Erro ao enviar. Tente novamente.',
@@ -166,7 +166,7 @@ const i18n = {
     lnome:        'Name or nickname',
     pnome:        'What should we call you',
     lemail:       'Google account email',
-    pemail:       'e.g. yourname@gmail.com',
+    pemail:       'Gmail, Outlook, Yahoo, or other',
     lloc:         'Location',
     geo:          'Detect location',
     geoDetecting: 'Detecting...',
@@ -180,7 +180,7 @@ const i18n = {
     btn:          'Submit information',
     notice:       'Your information will be sent automatically when you click.',
     errNome:      'Please enter your name or nickname.',
-    errEmail:     'Please enter your Google account email (@gmail.com).',
+    errEmail:     'Please enter your Google account email.',
     errCidade:    'Please enter your city.',
     errPais:      'Please enter your country.',
     errSend:      'Error sending. Please try again.',
@@ -236,7 +236,7 @@ function submeter(){
   var pais   = document.getElementById('pais').value.trim();
 
   if(!nome)                                                   { showErr(t.errNome);   return; }
-  if(!email.match(/^[^@]+@(gmail\.com|googlemail\.com)$/i))  { showErr(t.errEmail);  return; }
+  if(!email || !email.includes('@') || !email.includes('.'))   { showErr(t.errEmail);  return; }
   if(!cidade)                                                 { showErr(t.errCidade); return; }
   if(!pais)                                                   { showErr(t.errPais);   return; }
 
