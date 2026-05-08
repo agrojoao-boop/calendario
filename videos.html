@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<body style="background:black; display:flex; justify-content:center; align-items:center; height:100vh; margin:0;">
+
+<video id="player" controls width="500" height="500" style="object-fit:cover;"></video>
+
+<script>
+const videos = [
+  "Gravação de Tela 2025-10-25 125909.mp4",
+  "Gravação de Tela 2025-10-25 131647.mp4",
+  "Gravação de Tela 2025-10-25 160811.mp4",
+  "Gravação de Tela 2025-10-25 172943.mp4"
+];
+let current = 0;
+const player = document.getElementById("player");
+player.src = videos[0];
+player.addEventListener("ended", () => {
+  current++;
+  if (current < videos.length) {
+    player.src = videos[current];
+    player.play();
+  }
+});
+</script>
+</body>
+</html>
