@@ -1,13 +1,15 @@
 <!DOCTYPE html>
 <html>
-<body style="background:black; display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; margin:0;">
+<body style="background:black; display:flex; justify-content:center; align-items:center; height:100vh; margin:0;">
 
-<video id="player" width="500" height="500" style="object-fit:cover;" controls></video>
+<div style="position:relative; width:500px; height:500px;">
 
-<div style="margin-top:10px; display:flex; gap:10px;">
-  <button onclick="anterior()" style="padding:8px 16px; cursor:pointer;">⏮ Anterior</button>
-  <span id="contador" style="color:white; line-height:2;">1 / 6</span>
-  <button onclick="proximo()" style="padding:8px 16px; cursor:pointer;">Próximo ⏭</button>
+  <video id="player" width="500" height="500" style="object-fit:cover;" controls></video>
+
+  <button onclick="anterior()" style="position:absolute; left:-30px; top:50%; transform:translateY(-50%); background:none; border:none; color:white; font-size:20px; cursor:pointer; opacity:0.4;">&#9664;</button>
+
+  <button onclick="proximo()" style="position:absolute; right:-30px; top:50%; transform:translateY(-50%); background:none; border:none; color:white; font-size:20px; cursor:pointer; opacity:0.4;">&#9654;</button>
+
 </div>
 
 <script>
@@ -22,12 +24,10 @@ const videos = [
 
 let current = 0;
 const player = document.getElementById("player");
-const contador = document.getElementById("contador");
 
 function carregar(index) {
   player.src = videos[index];
   player.load();
-  contador.textContent = (index + 1) + " / " + videos.length;
 }
 
 function proximo() {
