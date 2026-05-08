@@ -301,68 +301,82 @@
 <body>
 <div class="container">
 
-  <!-- Marca -->
+  <!-- Back to site -->
+  <div style="margin-bottom:1rem;">
+    <a href="https://cultivoornamental.com/" onclick="window.location.href='https://cultivoornamental.com/';return false;" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:#888;text-decoration:none;border:1px solid #e0e0e0;padding:5px 12px;transition:all .15s;" onmouseover="this.style.color='#111';this.style.borderColor='#111';" onmouseout="this.style.color='#888';this.style.borderColor='#e0e0e0';">
+      &#8592; Back to site
+    </a>
+  </div>
+
+  <!-- Brand -->
   <div class="brand">
-<div>
-      <div class="brand-name">Calendário</div>
+    <div>
+      <div class="brand-name">Growing Calendar</div>
       <div class="brand-sub">cultivoornamental.com</div>
     </div>
   </div>
 
-  <!-- Autenticação -->
+  <!-- Auth -->
   <div id="authSection">
-    <p>Faça login com o Google para agendar um horário.</p>
+    <p>Sign in with Google to schedule a time.</p>
     <button class="google-btn" onclick="handleAuthClick()">
       <svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="m6.306 14.691 6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg>
-      Entrar com Google
+      Sign in with Google
     </button>
   </div>
 
-  <!-- Calendário -->
+  <!-- Calendar -->
   <div id="calSection">
     <div class="sync-badge">
       <span class="sync-dot"></span>
-      Sincronizado com Google Calendar
+      Synced with Google Calendar
     </div>
     <div style="font-size:11px;color:#888;margin-bottom:1.25rem;">
-      &#x1F550; Horários em <strong>GMT-3 (Brasília)</strong>
+      &#x1F550; Times in <strong>GMT-3 (Brasília)</strong>
     </div>
 
     <div class="cal-header">
-      <button class="nav-btn" onclick="changeMonth(-1)" aria-label="Mês anterior">&#8249;</button>
+      <button class="nav-btn" onclick="changeMonth(-1)" aria-label="Previous month">&#8249;</button>
       <span class="cal-title" id="monthTitle"></span>
-      <button class="nav-btn" onclick="changeMonth(1)" aria-label="Próximo mês">&#8250;</button>
+      <button class="nav-btn" onclick="changeMonth(1)" aria-label="Next month">&#8250;</button>
     </div>
 
     <div class="weekdays">
-      <div class="weekday">Dom</div>
-      <div class="weekday">Seg</div>
-      <div class="weekday">Ter</div>
-      <div class="weekday">Qua</div>
-      <div class="weekday">Qui</div>
-      <div class="weekday">Sex</div>
-      <div class="weekday">Sáb</div>
+      <div class="weekday">Sun</div>
+      <div class="weekday">Mon</div>
+      <div class="weekday">Tue</div>
+      <div class="weekday">Wed</div>
+      <div class="weekday">Thu</div>
+      <div class="weekday">Fri</div>
+      <div class="weekday">Sat</div>
     </div>
     <div class="days-grid" id="daysGrid"></div>
 
     <div id="timeSection">
       <div class="section-label" id="dateLabel"></div>
-      <div id="loadingSlots" class="loading" style="display:none">Carregando horários...</div>
+      <div id="loadingSlots" class="loading" style="display:none">Loading available times...</div>
       <div class="time-slots" id="timeSlots"></div>
     </div>
 
     <div id="formSection">
-      <div class="section-label" style="margin-bottom:10px">Seus dados</div>
-      <div class="form-row"><label class="form-label">Nome completo *</label><input class="form-input" type="text" id="inputNome" placeholder="Seu nome completo" /></div>
-      <div class="form-row"><label class="form-label">E-mail ou telefone</label><input class="form-input" type="text" id="inputContato" placeholder="email@... ou (xx) 99999-9999" /></div>
-      <div class="form-row"><label class="form-label">Assunto</label><input class="form-input" type="text" id="inputAssunto" placeholder="Ex: Consulta, Reunião, Visita..." /></div>
-      <button class="confirm-btn" id="confirmBtn" onclick="confirmar()">Confirmar agendamento</button>
+      <div class="section-label" style="margin-bottom:10px">Your details</div>
+      <div class="form-row"><label class="form-label">Full name *</label><input class="form-input" type="text" id="inputNome" placeholder="Your full name" /></div>
+      <div class="form-row"><label class="form-label">Email or phone</label><input class="form-input" type="text" id="inputContato" placeholder="email@... or phone number" /></div>
+      <div class="form-row"><label class="form-label">Subject</label><input class="form-input" type="text" id="inputAssunto" placeholder="E.g. Consultation, Meeting, Visit..." /></div>
+      <button class="confirm-btn" id="confirmBtn" onclick="confirmar()">Confirm appointment</button>
       <div class="status-msg" id="statusMsg"></div>
     </div>
 
     <div class="events-section" id="evSection">
-      <div class="section-label">Agendamentos do mês</div>
+      <div class="section-label">This month's appointments</div>
       <div id="evList"></div>
+    </div>
+
+    <!-- Back to site — inside interface -->
+    <div style="margin-top:1.5rem;padding-top:1.25rem;border-top:0.5px solid #e0e0e0;text-align:center;">
+      <a href="https://cultivoornamental.com/" onclick="window.location.href='https://cultivoornamental.com/';return false;" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:#888;text-decoration:none;border:1px solid #e0e0e0;padding:5px 12px;transition:all .15s;" onmouseover="this.style.color='#111';this.style.borderColor='#111';" onmouseout="this.style.color='#888';this.style.borderColor='#e0e0e0';">
+        &#8592; Back to site
+      </a>
     </div>
   </div>
 
@@ -392,8 +406,8 @@ const TIMES = [
 ];
 
 const MONTHS = [
-  'Janeiro','Fevereiro','Março','Abril','Maio','Junho',
-  'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'
+  'January','February','March','April','May','June',
+  'July','August','September','October','November','December'
 ];
 // ════════════════════════════════════════════
 
@@ -538,7 +552,7 @@ function selectDay(d) {
   document.getElementById('statusMsg').className = 'status-msg';
   renderCal();
   document.getElementById('dateLabel').textContent =
-    `Horários disponíveis — ${d} de ${MONTHS[curMonth]} de ${curYear} · GMT-3 (Brasília)`;
+    `Available times — ${MONTHS[curMonth]} ${d}, ${curYear} · GMT-3 (Brasília)`;
   document.getElementById('timeSection').style.display = 'block';
   renderTimes();
 }
@@ -577,7 +591,7 @@ async function confirmar() {
 
   const btn = document.getElementById('confirmBtn');
   btn.disabled = true;
-  btn.textContent = 'Salvando...';
+  btn.textContent = 'Saving...';
 
   const dateStr  = `${curYear}-${pad(curMonth+1)}-${pad(selDay)}`;
   const [h, m]   = selTime.split(':');
@@ -604,19 +618,19 @@ async function confirmar() {
   try {
     const url = 'https://www.googleapis.com/calendar/v3/calendars/primary/events?sendUpdates=all';
     await gapi('POST', url, body);
-    msg.textContent = '✓ Agendamento salvo no Google Calendar!';
+    msg.textContent = '✓ Appointment saved to Google Calendar!';
     msg.className   = 'status-msg success';
     document.getElementById('formSection').style.display = 'none';
     selTime = null;
     await loadEvents();
     if (selDay) renderTimes();
   } catch(e) {
-    msg.textContent = 'Erro ao salvar. Verifique sua conexão e tente novamente.';
+    msg.textContent = 'Error saving. Check your connection and try again.';
     msg.className   = 'status-msg error';
   }
 
   btn.disabled = false;
-  btn.textContent = 'Confirmar agendamento';
+  btn.textContent = 'Confirm appointment';
 }
 
 // ── Events list ───────────────────────────
@@ -636,7 +650,7 @@ function renderEvSection() {
         <div class="ev-dot"></div>
         <div>
           <div class="ev-name">${ev.title}</div>
-          <div class="ev-detail">${parseInt(d)}/${parseInt(mo)}/${y}${ev.time ? ' às ' + ev.time : ''}</div>
+          <div class="ev-detail">${parseInt(d)}/${parseInt(mo)}/${y}${ev.time ? ' at ' + ev.time : ''}</div>
         </div>`;
       list.appendChild(div);
     });
