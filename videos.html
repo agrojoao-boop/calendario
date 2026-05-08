@@ -1,8 +1,14 @@
 <!DOCTYPE html>
 <html>
-<body style="background:black; display:flex; justify-content:center; align-items:center; height:100vh; margin:0;">
+<body style="background:black; display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; margin:0;">
 
-<video id="player" controls width="500" height="500" style="object-fit:cover;"></video>
+<video id="player" width="500" height="500" style="object-fit:cover;" controls></video>
+
+<div style="margin-top:10px; display:flex; gap:10px;">
+  <button onclick="anterior()" style="padding:8px 16px; cursor:pointer;">⏮ Anterior</button>
+  <span id="contador" style="color:white; line-height:2;">1 / 6</span>
+  <button onclick="proximo()" style="padding:8px 16px; cursor:pointer;">Próximo ⏭</button>
+</div>
 
 <script>
 const videos = [
@@ -13,16 +19,33 @@ const videos = [
   "Gravação de Tela 2025-10-25 172943.mp4",
   "Gravação de Tela 2025-10-25 184028.mp4"
 ];
+
 let current = 0;
 const player = document.getElementById("player");
-player.src = videos[0];
-player.addEventListener("ended", () => {
-  current++;
-  if (current < videos.length) {
-    player.src = videos[current];
-    player.play();
+const contador = document.getElementById("contador");
+
+function carregar(index) {
+  player.src = videos[index];
+  player.load();
+  contador.textContent = (index + 1) + " / " + videos.length;
+}
+
+function proximo() {
+  if (current < videos.length - 1) {
+    current++;
+    carregar(current);
   }
-});
+}
+
+function anterior() {
+  if (current > 0) {
+    current--;
+    carregar(current);
+  }
+}
+
+player.addEventListener("ended", proximo);
+carregar(0);
 </script>
 </body>
 </html>
