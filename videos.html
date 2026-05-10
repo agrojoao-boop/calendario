@@ -14,7 +14,8 @@
 </head>
 <body>
 <div class="container">
-  <video id="player" autoplay muted loop playsinline onclick="togglePlay()"></video>
+  <!-- Removido "loop" para que o evento "ended" funcione -->
+  <video id="player" autoplay muted playsinline onclick="togglePlay()"></video>
   <button class="btn btn-left" onclick="anterior()">&#9664;</button>
   <button class="btn btn-right" onclick="proximo()">&#9654;</button>
 </div>
@@ -25,8 +26,8 @@ const videos = [
   "1.mp4",
   "2.mp4",
   "3.mp4",
-  "4.mp4"
-  "5.mp4"
+  "4.mp4",  // ✅ vírgula adicionada
+  "5.mp4",  // ✅ vírgula adicionada
   "6.mp4"
 ];
 let current = 0;
@@ -37,22 +38,19 @@ function carregar(index) {
   player.load();
   player.play();
 }
-
 function togglePlay() {
   player.paused ? player.play() : player.pause();
 }
-
 function proximo() {
   current = (current + 1) % videos.length;
   carregar(current);
 }
-
 function anterior() {
   current = (current - 1 + videos.length) % videos.length;
   carregar(current);
 }
 
-player.addEventListener("ended", proximo);
+player.addEventListener("ended", proximo); // ✅ agora funciona sem "loop"
 carregar(0);
 </script>
 </body>
