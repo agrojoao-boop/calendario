@@ -508,7 +508,17 @@ function pad(n) { return String(n).padStart(2,'0'); }
 
 function bookedTimesForDay(d) {
   const dateStr = `${curYear}-${pad(curMonth+1)}-${pad(d)}`;
-  return gcalEvents.filter(e => e.date === dateStr).map(e => e.time).filter(Boolean);
+  const dayEvents = gcalEvents.filter(e => e.date === dateStr && e.time);
+  const occupied = new Set();
+  dayEvents.forEach(e => {
+    const idx = TIMES.indexOf(e.time);
+    if (idx === -1) { occupied.add(e.time); return; }
+    // Block the selected slot plus the next 3 hours (3h consultation duration)
+    for (let i = idx; i < idx + 4 && i < TIMES.length; i++) {
+      occupied.add(TIMES[i]);
+    }
+  });
+  return Array.from(occupied);
 }
 
 function daysWithEvents() {
@@ -596,7 +606,7 @@ async function confirmar() {
   const dateStr  = `${curYear}-${pad(curMonth+1)}-${pad(selDay)}`;
   const [h, m]   = selTime.split(':');
   const startISO = `${dateStr}T${h}:${m}:00`;
-  const endH     = String(parseInt(h) + 1).padStart(2,'0');
+  const endH     = String(parseInt(h) + 3).padStart(2,'0');
   const endISO   = `${dateStr}T${endH}:${m}:00`;
 
   const body = {
@@ -649,7 +659,7 @@ function renderEvSection() {
       div.innerHTML = `
         <div class="ev-dot"></div>
         <div>
-          <div class="ev-name">${ev.title}</div>
+          <div class="ev-name">Occupied</div>
           <div class="ev-detail">${parseInt(d)}/${parseInt(mo)}/${y}${ev.time ? ' at ' + ev.time : ''}</div>
         </div>`;
       list.appendChild(div);
